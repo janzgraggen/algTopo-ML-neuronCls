@@ -9,7 +9,7 @@ DATAPATH = "../Data/"
 LAYER = "L2"
 NEURITE_TYPE = "apical_dendrite"
 CLS = sklearn.tree.DecisionTreeClassifier() # alt: sklearn.discriminant_analysis.QuadraticDiscriminantAnalysis() 
-                                            #or sklearn.discriminant_analysis.LinearDiscriminantAnalysis()
+PH_F = "radial_distances"                                          #or sklearn.discriminant_analysis.LinearDiscriminantAnalysis()
                                             # or try -> as in paper suposedly: sklearn.svm.LinearSVC
 K_FOLDS = 3
 
@@ -24,6 +24,7 @@ labels, pers_images, pers_diagrams = load_data(
     datapath=DATAPATH,
     types=LAYER,
     neurite_type= NEURITE_TYPE,
+    distance_functor= PH_F,
     flatten=True
 )
 
