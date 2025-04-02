@@ -1,0 +1,9 @@
+matplotlib
+neurom 
+numpy 
+dionysus-2.0.9
+# phstuff 
+tmd
+scipy
+scikit-learn
+data
