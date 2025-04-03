@@ -105,7 +105,7 @@ def vectorize_persistence_diagrams(
 
     return vectorized
 
-VectorizationType = Literal['persistence_image', 'wasserstein', 'bottleneck', 'slice_wasserstein', 'landscape']
+VECTORIZATION_TYPES = Literal['persistence_image', 'wasserstein', 'bottleneck', 'slice_wasserstein', 'landscape']
 
 def load_data(
     datapath= "../../Reconstructed/",
@@ -113,7 +113,7 @@ def load_data(
     # e.g. "L2_IPC", "L2_TPC:A", "L5_UTPC", "L5_STPC", "L5_TTPC1", "L5_TTPC2"
     neurite_type= "apical_dendrite", # basal_dendrite, axons, dendrites = combo of basal an apical
     pers_hom_function = "radial_distances", # radial_distances or path or else. 
-    vectorization:  Union[VectorizationType, List[VectorizationType]] = "persistence_image", # persistence_image or persistence_diagram
+    vectorization:  Union[VECTORIZATION_TYPES, List[VECTORIZATION_TYPES]] = "persistence_image", # persistence_image or persistence_diagram
     M: int = None, # for sliced wasserstein
     k: int = None, # for landscape
     m: int = None,  # for landscape
