@@ -3,6 +3,7 @@ from sklearn.metrics import f1_score, accuracy_score
 from sklearn.model_selection import cross_validate ,GridSearchCV, StratifiedKFold
 from sklearn.svm import SVC
 from collections.abc import Iterable
+from typing import Union
 from sklearn.model_selection import BaseCrossValidator
 
 
@@ -10,6 +11,7 @@ from sklearn.model_selection import BaseCrossValidator
 def train_sklearn_classifier(labels,pers_image, sk_clf, train_test_ratio):
     """
     Train a sklearn classifier with the given data and labels.
+    -> here standalone, however should be implemented in the skTrainer class
     """
 
     # Split the data into training and testing sets
@@ -31,40 +33,39 @@ def train_sklearn_classifier(labels,pers_image, sk_clf, train_test_ratio):
     print(f"F1 Score: {f1:.2f}")
 
     return sk_clf
-
-
-
-def train_crossvalidation(labels, pers_images, sk_clf, n_splits=5):
-    """
-    Train the classifier using cross-validation and calculate accuracies.
-    """
-    #cross-validation doc:
-    #       https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate
-    score = cross_validate(estimator=sk_clf, X=pers_images ,y=labels, scoring= ["accuracy"],cv= n_splits)
-    # The scoring metric strings:
-    #       https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-api-overview
-    accuracies = score["test_accuracy"]
-    avg_accuracy = np.mean(accuracies)
-
-    print(f"Average accuracy: {avg_accuracy:.2f}")
-    return avg_accuracy
     
+def train_crossvalidation(labels, data_dict, sk_clf, n_splits=5):
+        """
+        Train the classifier using cross-validation and calculate accuracies.
+        -> here standalone, however in mainly used in the skTrainer class
+        """
+        avg_accuracies = {}
+        print("================================")
+        print(f"Training a {sk_clf.__class__.__name__}-Classifier with CrossValidation...")
+        print("––––")
+        for name, data in data_dict.items(): 
+            #cross-validation doc:
+            #       https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate
+            score = cross_validate(estimator=sk_clf, X=data ,y=labels, scoring= "accuracy",cv= n_splits)
+            # The scoring metric strings:
+            #       https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-api-overview
+            accuracies = score['test_score']
+            avg_accuracies[name] = np.mean(accuracies)
+            print(f"Average accuracy of Data = {name}: {avg_accuracies[name]:.6f}")
+            print("––––")
+        return avg_accuracies
 
 class skTrainer(): 
     def __init__(
         self, 
-        data: any | list[any],
+        data: dict[str, np.ndarray],
         labels,
-        crosvalidate: any | None = None,
-        gridsearch: GridSearchCV | None = None,
-        cls: any | None = None,
-        ):
+        cls: Union[any, None] = SVC(),
+        crosvalidate: Union[any, None] = None,
+        gridsearch: Union[GridSearchCV, None] = None
+    ):
         ## SET DEFAULTS
-        
-        if not cls:
-            self.cls = cls
-        else:
-            self.cls = SVC()
+        self.cls = cls
 
         if not crosvalidate:
             self.cv = StratifiedKFold(n_splits=3, random_state=42, shuffle=True)
@@ -76,47 +77,67 @@ class skTrainer():
                 {'C': [1, 10, 100, 1000], 'kernel': ['linear'], 'class_weight': ['balanced', None]},
                 {'C': [1, 10, 100, 1000], 'gamma': [0.001, 0.0001], 'kernel': ['rbf'], 'class_weight': ['balanced', None]},
             ]
-            self.gs = GridSearchCV(self.cls,paramgrid,cv=self.cv)
+            self.gs = GridSearchCV(self.cls,paramgrid,cv=self.cv, scoring= "accuracy")
         else:
             self.gs = gridsearch
 
-        self.X = [data] if type(data) is not list else data
+        self.X = data
         self.y = labels
-        
-  
-    def train_crossvalidation(self):
+
+    def train_crossvalidation(self, vectorization_select = False):
         """
         Train the classifier using cross-validation and calculate accuracies.
         """
-        avg_accuracies = []
-        for data in self.X: 
+        avg_accuracies = {}
+        print("\n================================")
+        print(f"Training a {self.cls.__class__.__name__}-Classifier with CrossValidation...")
+        print("––––")
+
+        if vectorization_select:
+            if type(vectorization_select) == str:
+                data_dict = {vectorization_select: self.X[vectorization_select]}
+            else: data_dict = {k: self.X[k] for k in vectorization_select}
+        else:
+            data_dict = self.X
+
+        print(f"Data dict: {data_dict.keys()}")
+        for name in data_dict: 
+            data = data_dict[name]
             #cross-validation doc:
             #       https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate
-            score = cross_validate(estimator=self.cls, X=data ,y=self.y, scoring= ["accuracy"],cv= self.cv)
+            score = cross_validate(estimator=self.cls, X=data ,y=self.y, scoring= "accuracy",cv= self.cv)
             # The scoring metric strings:
             #       https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-api-overview
-            accuracies = score["test_accuracy"]
-            avg_accuracies.append(np.mean(accuracies))
-
-        print(f"Average accuracy: {avg_accuracies:.2f}")
+            accuracies = score['test_score']
+            avg_accuracies[name] = np.mean(accuracies)
+            print(f"Average accuracy of Data = {name}: {avg_accuracies[name]:.6f}")
+            print("––––")
         return avg_accuracies
     
-    def train_gridsearch(self, return_estimator: bool = False):
+    def train_gridsearch(self,vectorization_select = False, return_estimator: bool = False):
         """
-        Train the classifier using cross-validation and calculate accuracies.
+        Train the classifier using Gridsearch and cross-validation and calculate accuracies.
         """
-        best_average_accuracies = []
-        best_estimators = []
-        for data in self.X:
-            #cross-validation doc:
-            #       https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_validate.html#sklearn.model_selection.cross_validate
-            GS =  GridSearchCV(estimator=self.gs, X=data ,y=self.y, scoring= ["accuracy"],cv= self.cv).best_estimator_
-            best_estimators.append(GS.best_estimator_)
-            best_average_accuracies.append(GS.best_score_)
-            
+        best_average_accuracies = {}
+        best_estimators = {}
+        print("\n=================================")
+        print(f"Training a {self.cls.__class__.__name__}-Classifier with GridSearchCV...")
+        print("––––")
+        if vectorization_select:
+            data_dict = {k: self.X[k] for k in vectorization_select}
+        else:
+            data_dict = self.X
 
-        print(f"Best parameters: {GS.best_params_}")
-        print(f"Average accuracy: {score:.2f}")
+        for name in data_dict:
+            data = data_dict[name]
+            #grid search doc:
+            #       https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html#sklearn.model_selection.GridSearchCV
+            self.gs.fit(np.array(data), np.array(self.y))
+            best_estimators[name] = self.gs.best_estimator_
+            best_average_accuracies[name] = self.gs.best_score_
+            print(f"Average accuracy of Data = {name}: {self.gs.best_score_:.6f}")
+            print(f"Best parameters for training Data ={name}: {self.gs.best_params_}")
+            print("––––")
         return best_average_accuracies, best_estimators if  return_estimator else best_average_accuracies
         
     

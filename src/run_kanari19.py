@@ -1,41 +1,53 @@
-import numpy as np
-import sklearn.calibration
 import sklearn.model_selection
 import sklearn.svm
 import sklearn.tree
-import sklearn 
+import sklearn.discriminant_analysis
 
 from data import load_data
-from train import train_crossvalidation, skTrainer
+from train import skTrainer
 
+
+## ------------------------ DATA LOAD PARAMS --------------------------------
 DATAPATH = "../Data/"
 LAYER = "L2"
 NEURITE_TYPE = "apical_dendrite"
+PH_F = "radial_distances"   
+VECTORIZATION = ["persistence_image", "wasserstein","bottleneck","sliced_wasserstein", "landscape"] # or "landscape" or "bottleneck" or "wasserstein" or "slice_wasserstein"
 
+# ------------------------ Vectirization Params --------------------------------
+#persistence_image:
+FLATTEN = True # flatten the image
+# sliced_wasserstein:
+M_SW = 20 # number of slices
+# landscape:
+K_LS = 1 # number of landscapes
+M_LS = 1 # resolution
 
-#classifier
-CLS = sklearn.svm.SVC()
-#crossvalidation strategy
-
-# grid search over classifier and cv strategy
-
-PH_F = "radial_distances"                                          #or sklearn.discriminant_analysis.LinearDiscriminantAnalysis()
-                                            # or try -> as in paper suposedly: sklearn.svm.LinearSVC
-K_FOLDS = 3
-
-
-"""
-Distance Functions for Mat of persistence diags -> classify based on array -> pw distance relations are feature row per idx
-
-"""
-
+# ------------------------ CLASSIFIER PARAMS --------------------------------
+CLS = sklearn.svm.SVC() #or other classifiers like sklearn.tree.DecisionTreeClassifier() or sklearn.discriminant_analysis.QuadraticDiscriminantAnalysis()
+CV = sklearn.model_selection.StratifiedKFold(n_splits=3, shuffle=True, random_state=42) # or int 
+GRID = sklearn.model_selection.GridSearchCV(
+    param_grid={
+        'C': [1, 10, 100, 1000],
+        'kernel': ['linear', 'rbf'],
+        'class_weight': ['balanced', None],
+        'gamma': [0.001, 0.0001],
+    },
+    estimator=CLS,
+    cv=CV,
+)
+                                    
 # ------------------------ Data loading --------------------------------
 labels, pers_images = load_data(
     datapath=DATAPATH,
     types=LAYER,
     neurite_type= NEURITE_TYPE,
     pers_hom_function= PH_F,
-    flatten=True
+    vectorization= VECTORIZATION,
+    flatten=FLATTEN,
+    M= M_SW,
+    k = K_LS,
+    m = M_LS
 )
 
 ### ------------------------ Training dataset --------------------------------
@@ -43,16 +55,10 @@ labels, pers_images = load_data(
 trainer = skTrainer(
     data=pers_images,
     labels=labels,
+    cls=CLS,
+    crosvalidate=CV,
+    gridsearch=GRID
 )
 
-trainer.train_gridsearch()
-
-
-
-train_crossvalidation(
-    labels=labels,
-    pers_images=pers_images,
-    sk_clf=CLS,
-    n_splits=K_FOLDS
-)
-
+trainer.train_crossvalidation(vectorization_select= "persistence_image")
+#trainer.train_gridsearch()

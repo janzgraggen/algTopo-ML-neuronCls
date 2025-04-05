@@ -33,13 +33,15 @@ def compute_pairwise_distance_matrix(
     :return: pairwise distance matrix
     """
     ## PAIRWISE DISTANCE MATRIX
-    if distance == "wasserstein":
-        matrix = np.zeros((len(pers_diagrams), len(pers_diagrams)))
-        for i in range(len(pers_diagrams)):
-            for j in range(i, len(pers_diagrams)):  # Start from i to leverage symmetry
-                matrix[i, j] = pd_distance_wrapper(distance=distance, M=M)(pers_diagrams[i], pers_diagrams[j])
-                if i != j:  # Use symmetry to fill the other half
-                    matrix[j, i] = matrix[i, j]
+    
+    print(f'    Computing PW-dist matrix with d: {distance}')
+
+    matrix = np.zeros((len(pers_diagrams), len(pers_diagrams)))
+    for i in range(len(pers_diagrams)):
+        for j in range(i, len(pers_diagrams)):  # Start from i to leverage symmetry
+            matrix[i, j] = pd_distance_wrapper(distance=distance, M=M)(pers_diagrams[i], pers_diagrams[j])
+            if i != j:  # Use symmetry to fill the other half
+                matrix[j, i] = matrix[i, j]
     return matrix
 
 def vectorize_persistence_diagrams(
@@ -80,18 +82,18 @@ def vectorize_persistence_diagrams(
         if multiple vectiorizatons are given: reurn a dict with keys as vectorization methods and values as the vectorized data.
     """
     # based on kernel density estimation (gaussian) ––––––––––––––––
+    print(f'Vectiorize PD accoringig to mode: {vectorization}')
     if vectorization == "persistence_image":
         xlim, ylim = tmd.vectorizations.get_limits(pers_diagrams)
         vectorized = [
-            tmd.vectorizations.persistence_image_data(pd, xlim=xlim, ylim=ylim) for pd in pers_diagrams
+            tmd.vectorizations.persistence_image_data(pd, xlim=xlim, ylim=ylim) for pd in pers_diagrams ## alt use gaussian_image
         ]
         if flatten:
             vectorized = [i.flatten() for i in vectorized]
-
     ## based on function approximation –––––––––––––––––––––––––––––––
     elif vectorization == "landscape":
         vectorized = [
-            landscape(pd, k=k, m=m) for pd in pers_diagrams # k and m for landscape
+            landscape(pd, k=k, m=m) for pd in pers_diagrams # k and m for landscape 
         ]
 
     ## based on pairwise distance matrix ––––––––––––––––––
@@ -114,11 +116,11 @@ def load_data(
     neurite_type= "apical_dendrite", # basal_dendrite, axons, dendrites = combo of basal an apical
     pers_hom_function = "radial_distances", # radial_distances or path or else. 
     vectorization:  Union[VECTORIZATION_TYPES, List[VECTORIZATION_TYPES]] = "persistence_image", # persistence_image or persistence_diagram
-    M: int = None, # for sliced wasserstein
-    k: int = None, # for landscape
-    m: int = None,  # for landscape
+    M: int = 0, # for sliced wasserstein
+    k: int = 0, # for landscape
+    m: int = 0,  # for landscape
     flatten: bool = True, # for gaussian image
-    verbose = True, # print the loading process
+    verbose = True, # print the loading process 
     return_pds = False # return persistence diagrams
 ):
     
@@ -156,7 +158,7 @@ def load_data(
     return_pds : bool, optional
         Whether to return the raw persistence diagrams. Default is False.
     Returns:
-    -------
+    
     tuple
         If `return_pds` is False:
             (labels, vectorized_pds)
@@ -177,7 +179,8 @@ def load_data(
 
     if verbose:
         print("Loading data from: ", types)
-        
+        for neuron_type in types:
+            print(f"Processing neuron type: {neuron_type}")
     
     groups = [tmd.io.load_population(os.path.join(datapath, type ), use_morphio=True) for type in types]
     labels = [i + 1 for i, k in enumerate(groups) for j in k.neurons]
@@ -200,7 +203,8 @@ def load_data(
             )
     ## handle single vectorization
     else:
-        vectorized_pds = vectorize_persistence_diagrams(
+        vectorized_pds = {}
+        vectorized_pds[vectorization] = vectorize_persistence_diagrams(
             pers_diagrams, 
             vectorization=vectorization, 
             flatten=flatten,
