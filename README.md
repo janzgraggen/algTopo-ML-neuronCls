@@ -7,10 +7,6 @@ Repo for the Master Semester project:
   
 Requirements can be found in `requirements.txt`
 
-When cloning update the external libraries:
-`git submodule update --init --recursive`
-`
-
 ## Directory Structure
 
 
