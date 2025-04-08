@@ -8,3 +8,8 @@ Requirements can be found in `requirements.txt`
 When cloning update the external libraries:
 `git submodule update --init --recursive`
 `
+
+The files in 
+`algTopo-ML-neuronCls/tda_toolbox`
+are copied from https://github.com/Eagleseb/tda_toolbox
+`
