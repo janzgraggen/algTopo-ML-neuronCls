@@ -5,22 +5,9 @@ Repo for the Master Semester project:
   - Spring semester 2025
   - Project by Jan Zgraggen, supervised by Lida Kanari 
   
-Requirements can be found in `requirements.txt`
-
-## Directory Structure
 
 
-```
-/project-directory
-  /Data            # Directory containing the dataset
-  /src             # Source code directory
-    /data.py       # Data loading functions
-    /train.py      # Training functions (skTrainer)
-  /run_kanari19.py # Reproduction of paper results
-  README.md        # This file
-```
-
-## Requirements
+### Requirements
 
 Install the required dependencies using the following command:
 
