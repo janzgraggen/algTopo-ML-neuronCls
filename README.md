@@ -11,7 +11,6 @@ When cloning update the external libraries:
 
 ## Directory Structure
 
-Make sure your project directory follows this structure:
 
 ```
 /project-directory
