@@ -5,7 +5,7 @@ Repo for the Master Semester project:
   - Spring semester 2025
   - Project by Jan Zgraggen, supervised by Lida Kanari 
   
-
+Note: The tda_toolbox folder contains files from [this repo](https://github.com/Eagleseb/tda_toolbox) by Sébastien Morand. I modified them slightly to be up to date with newer versions of python and some libraries. 
 
 ### Requirements
 
