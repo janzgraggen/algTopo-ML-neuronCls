@@ -513,8 +513,8 @@ def sliced_wasserstein_distance(barcode1, barcode2, M, ord=1):
         b2.append(orth_proj(bar, diag))
     for bar in barcode2:
         b1.append(orth_proj(bar, diag))
-    b1 = np.array(b1, copy=False)
-    b2 = np.array(b2, copy=False)
+    b1 = np.asarray(b1)
+    b2 = np.asarray(b2)
     s = np.pi / M
     theta = -np.pi / 2
     sw = 0
