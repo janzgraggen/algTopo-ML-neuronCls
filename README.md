@@ -1,9 +1,9 @@
 # algTopo-ML-neuronCls
 
 Repo for the Master Semester project: 
-  Using algebraic topology and ML to cluster and classify neurons. 
-  Spring semester 2025
-  Project by Jan Zgraggen, supervised by Lida Kanari 
+  - Using algebraic topology and ML to cluster and classify neurons. 
+  - Spring semester 2025
+  - Project by Jan Zgraggen, supervised by Lida Kanari 
   
 Requirements can be found in `requirements.txt`
 
