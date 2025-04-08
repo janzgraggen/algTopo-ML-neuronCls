@@ -16,13 +16,14 @@ pip install -r requirements.txt
 ```
 
 # Usage of run_kanari19.py
-This reproduces the results from [Kanari et al., 2019](https://academic.oup.com/cercor/article/29/4/1719/5304727).
+This python file reproduces the results from [Kanari et al., 2019](https://academic.oup.com/cercor/article/29/4/1719/5304727).
 
 
 ## Dataset Preparation
-And download the Dataset Reconstructions.zip which is found [here](https://zenodo.org/record/5909613#.YygtAmxBw5k)
+The the Dataset used is Reconstructions.zip which is found [here](https://zenodo.org/record/5909613#.YygtAmxBw5k)
 
-Place your dataset in the `Data/` directory. The folder should look like the followning
+For reproduction of the result place the dataset in the `Data/` directory. 
+The folder should look like the followning:
 ```
 ├── Data
 │   ├── L1_DAC
@@ -36,8 +37,8 @@ Place your dataset in the `Data/` directory. The folder should look like the fol
 │   ├── L5_UPC
 │   ├── L6_BPC
 │   └── L6_UPC
-```
 (only showing a subset)
+```
 to ensure the data is formatted correctly and compatible with the `load_data()` function in the `src/data.py` file.
 
 ## Configuration
