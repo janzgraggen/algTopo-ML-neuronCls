@@ -4,7 +4,7 @@ import sklearn.tree
 import sklearn 
 
 from data import load_data, split_data
-from train import train_sklearn_classifier, predict
+from train import train_sklearn_classifier
 
 
 
