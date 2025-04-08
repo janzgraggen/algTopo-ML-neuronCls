@@ -3,13 +3,13 @@ import sklearn.svm
 import sklearn.tree
 import sklearn.discriminant_analysis
 
-from data import load_data
-from train import skTrainer
+from src.data import load_data
+from src.train import skTrainer
 
 
 ## ------------------------ DATA LOAD PARAMS --------------------------------
-DATAPATH = "../Data/"
-LAYER = "L2"
+DATAPATH = "Data/"
+LAYER = "L3"
 NEURITE_TYPE = "apical_dendrite"
 PH_F = "radial_distances"   
 VECTORIZATION = ["persistence_image", "wasserstein","bottleneck","sliced_wasserstein", "landscape"] # or "landscape" or "bottleneck" or "wasserstein" or "slice_wasserstein"
@@ -59,6 +59,8 @@ trainer = skTrainer(
     crosvalidate=CV,
     gridsearch=GRID
 )
-
-trainer.train_crossvalidation(vectorization_select= "persistence_image")
+for i in range(len(VECTORIZATION)):
+    trainer.train_crossvalidation(vectorization_select= VECTORIZATION[i])
+    
+#trainer.train_crossvalidation(vectorization_select= "persistence_image")
 #trainer.train_gridsearch()

@@ -3,17 +3,19 @@ import tmd
 import os
 from typing import Union, List, Literal
 
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../tda_toolbox')))
-from diagram import bottleneck_distance, wasserstein_distance, sliced_wasserstein_distance  # M for sliced, k, m for landscape
-from diagram import landscape
-from diagram import gaussian_image
+from tda_toolbox.diagram import bottleneck_distance, wasserstein_distance, sliced_wasserstein_distance  # M for sliced, k, m for landscape
+from tda_toolbox.diagram import landscape
+from tda_toolbox.diagram import gaussian_image
+
+VECTORIZATION_TYPES = Literal['persistence_image', 'wasserstein', 'bottleneck', 'slice_wasserstein', 'landscape']
 
 def pd_distance_wrapper(
     distance: Literal['wasserstein', 'bottleneck', 'sliced_wasserstein'] = "wasserstein",
     M: int = None, # for sliced wasserstein
 ): 
+    """
+    Create a labda function for pariwise distance calculation according to the given distance metric.
+    """
     if distance == "wasserstein":
         return lambda x, y: wasserstein_distance(x, y)
     elif distance == "bottleneck":
@@ -107,7 +109,6 @@ def vectorize_persistence_diagrams(
 
     return vectorized
 
-VECTORIZATION_TYPES = Literal['persistence_image', 'wasserstein', 'bottleneck', 'slice_wasserstein', 'landscape']
 
 def load_data(
     datapath= "../../Reconstructed/",
