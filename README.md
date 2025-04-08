@@ -19,6 +19,7 @@ Make sure your project directory follows this structure:
   /src             # Source code directory
     /data.py       # Data loading functions
     /train.py      # Training functions (skTrainer)
+  /run_kanari19.py # Reproduction of paper results
   README.md        # This file
 ```
 
