@@ -3,7 +3,7 @@ import sklearn.svm
 import sklearn.tree
 import sklearn.discriminant_analysis
 
-from src.data import load_data
+from src.data.load_tdm import load_data
 from src.train import skTrainer
 
 
@@ -59,8 +59,40 @@ trainer = skTrainer(
     crosvalidate=CV,
     gridsearch=GRID
 )
-for i in range(len(VECTORIZATION)):
-    trainer.train_crossvalidation(vectorization_select= VECTORIZATION[i])
+
+# for i in range(len(VECTORIZATION)):
+#     trainer.train_crossvalidation(vectorization_select= VECTORIZATION[i])
     
 #trainer.train_crossvalidation(vectorization_select= "persistence_image")
 #trainer.train_gridsearch()
+
+layer_trainers = {}
+for layer in ["L2", "L3", "L4", "L5"]:
+    
+    labels, pers_images = load_data(
+    datapath=DATAPATH,
+    types=layer,
+    neurite_type= NEURITE_TYPE,
+    pers_hom_function= PH_F,
+    vectorization= VECTORIZATION,
+    flatten=FLATTEN,
+    M= M_SW,
+    k = K_LS,
+    m = M_LS
+    )
+
+    layer_trainers[layer]  = skTrainer(
+    data=pers_images,
+    labels=labels,
+    cls=CLS,
+    crosvalidate=CV,
+    gridsearch=GRID
+)
+
+for key, trainer in layer_trainers.values():
+    print(f"\n================================")
+    print(f"================================")
+    print(key)
+    for vec in VECTORIZATION:
+        print(vec)
+        trainer.train_crossvalidation(vectorization_select= vec)
