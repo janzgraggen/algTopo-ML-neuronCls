@@ -110,9 +110,10 @@ def vectorize_persistence_diagrams(
     return vectorized
 
 
-def load_data(
-    datapath= "../../Reconstructed/",
-    types= list or str, # list of neuron types to load or string with Layer name or layer type  
+def load_tmd(
+    datapath= "assets",
+    layer= "L2", # layer name
+    types= [], # list of neuron types to load or string with type  
     # e.g. "L2_IPC", "L2_TPC:A", "L5_UTPC", "L5_STPC", "L5_TTPC1", "L5_TTPC2"
     neurite_type= "apical_dendrite", # basal_dendrite, axons, dendrites = combo of basal an apical
     pers_hom_function = "radial_distances", # radial_distances or path or else. 
@@ -133,8 +134,10 @@ def load_data(
     datapath : str, optional
         Path to the directory containing the reconstructed neuron data. 
         Default is "../../Reconstructed/".
+    layer : list or str
+        Layer name to load data from. Default is "L2". from "L2", "L3", "L4", "L5" , "L6", "L23"
     types : list or str
-        List of neuron types to load or a string specifying a layer name or type 
+        List of neuron types to load or a string specifying a type/types (substring to match)
         (e.g., "L2_IPC", "L5_TTPC1").
     neurite_type : str, optional
         Type of neurite to analyze. Options include "apical_dendrite", 
@@ -175,8 +178,13 @@ def load_data(
               if multiple vectorizations are given, return a dict with keys as vectorization methods and values as the vectorized data.
             - pers_diagrams: Raw persistence diagrams for the neurons.
     """
-    if type(types) == str:
-        types = [x  for x in os.listdir(datapath) if types + "_" in x]
+    #take all types of a layer if no type is given
+    if not  types:
+        types = [x for x in os.listdir(datapath + "/" +layer + "/")]
+    if type(types) == str: 
+        types = [types]
+    types = [ x.split("_")[0] + "/" + x  for x in types]
+
 
     if verbose:
         print("Loading data from: ", types)

@@ -3,13 +3,14 @@ import sklearn.svm
 import sklearn.tree
 import sklearn.discriminant_analysis
 
-from src.data.load_tdm import load_data
-from src.train import skTrainer
+from src.data.load_tdm import load_tmd
+from src.train.train_tdm import skTrainer
 
 
 ## ------------------------ DATA LOAD PARAMS --------------------------------
-DATAPATH = "Data/"
+DATAPATH = "assets"
 LAYER = "L3"
+TYPES = "" # or str or list of neuron types to load or string with Layer name or layer type
 NEURITE_TYPE = "apical_dendrite"
 PH_F = "radial_distances"   
 VECTORIZATION = ["persistence_image", "wasserstein","bottleneck","sliced_wasserstein", "landscape"] # or "landscape" or "bottleneck" or "wasserstein" or "slice_wasserstein"
@@ -38,9 +39,10 @@ GRID = sklearn.model_selection.GridSearchCV(
 )
                                     
 # ------------------------ Data loading --------------------------------
-labels, pers_images = load_data(
+labels, pers_images = load_tmd(
     datapath=DATAPATH,
-    types=LAYER,
+    layer=LAYER,
+    types=TYPES,
     neurite_type= NEURITE_TYPE,
     pers_hom_function= PH_F,
     vectorization= VECTORIZATION,
@@ -69,9 +71,10 @@ trainer = skTrainer(
 layer_trainers = {}
 for layer in ["L2", "L3", "L4", "L5"]:
     
-    labels, pers_images = load_data(
+    labels, pers_images = load_tmd(
     datapath=DATAPATH,
-    types=layer,
+    layer=layer,
+    types=[],
     neurite_type= NEURITE_TYPE,
     pers_hom_function= PH_F,
     vectorization= VECTORIZATION,
