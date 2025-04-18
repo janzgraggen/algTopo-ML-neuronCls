@@ -58,7 +58,7 @@ def train_crossvalidation(labels, data_dict, sk_clf, n_splits=5):
 class skTrainer(): 
     def __init__(
         self, 
-        data: dict[str, np.ndarray],
+        data,#: dict[str, np.ndarray]
         labels,
         cls: Union[any, None] = SVC(),
         crosvalidate: Union[any, None] = None,
