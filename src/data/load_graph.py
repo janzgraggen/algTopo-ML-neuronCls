@@ -168,7 +168,7 @@ def load_graph(
             pre_filter= filters,
             ) for layer_entry in (layer if isinstance(layer, list) else [layer])
         ] 
-    dataset = ConcatDataset(layer_datasets)
+    dataset = MorphologyDataset(ConcatDataset(layer_datasets))
 
     if verbose:
         print("Neuron types found:")
