@@ -1,5 +1,7 @@
 from src.data.load_graph import load_graph
 from morphoclass import transforms
+import matplotlib.pyplot as plt
+from morphoclass import  vis
 """
 Unlike in docs_ read form structured dir expects path -> Layer -> Label -> Files structure
 """
@@ -37,8 +39,12 @@ if len(dataset) == 0:
 # Visualize the dataset
 print("Dataset Information:")
 print(f"Number of samples: {len(dataset)}")
-print(f"Features available: {dataset.features if hasattr(dataset, 'features') else 'No features loaded'}")
-
+#print(f"Features available: {dataset.num_features}")
+# Print list of attributes of the dataset
+print("\nDataset Attributes and Fields:")
+for attr in dir(dataset):
+    if not attr.startswith("__"):
+        print(f"{attr}: {getattr(dataset, attr)}")
 
 
 # Check the dimensions of the first sample
@@ -48,23 +54,16 @@ if len(dataset) > 0:
     for i, ax in enumerate(axs):
         ax.set_aspect("equal")
         ax.set_title(f"#{i}")
-        vis.plot_tree(dataset[0].tmd_neurites[0], ax, node_size=1)
+        vis.plot_tree(dataset[i].tmd_neurites[0], ax, node_size=1)
     fig.show()
 
-    #print stats proposed from GPT
+    #print stats
     sample = dataset[0]
     print("\nFirst Sample Information:")
     print(f"Path: {sample.path}")
     print(f"Number of neurites: {len(sample.tmd_neurites)}")
     print(f"Graph edge index shape: {sample.edge_index.shape if hasattr(sample, 'edge_index') else 'No edge index'}")
     print(f"Graph features shape: {sample.x if hasattr(sample, 'x') else 'No features'}")
+    print(f"Graph label nr: {sample.y if hasattr(sample, 'y') else 'No labels'}")
+    print(f"Graph label: {sample.y_str if hasattr(sample, 'y_str') else 'No labels'}")
 
-# Visualize the first neurite of the first sample
-if len(sample.tmd_neurites) > 0:
-    fig, ax = plt.subplots(figsize=(8, 6))
-    ax.set_aspect("equal")
-    ax.set_title("Visualization of the First Neurite")
-    vis.plot_tree(sample.tmd_neurites[0], ax, node_size=1)
-    plt.show()
-else:
-    print("No neurites available for visualization.")

@@ -1,23 +1,14 @@
 from  morphoclass.data import MorphologyDataset
-from morphoclass import transforms, vis , training
+from morphoclass import transforms
 from morphoclass.data.filters import inclusion_filter, attribute_check, combined_filter , has_apicals_filter
 
-from typing import List, Union
+from typing import List
 import matplotlib.pyplot as plt
 import pathlib
 from torch.utils.data import ConcatDataset
 
-## inclusiton filters according to morpho class filter implementation to handle the same data loading as in load tdm
-  
-## handling in tdm_loading: 
-    # # create list of all cell types that we want to load:
-    # if type(types) == str:
-    #     types = [x  for x in os.listdir(datapath) if types + "_" in x]
 
 TMD_TYPES = {
-    """
-    Mapping of neurite types to their corresponding TMD types.
-    """
     "apical": "apical_dendrite",
     "axon": "axon",
     "basal": "basal_dendrite",
@@ -144,13 +135,13 @@ def load_graph(
         print("setting filters")
     if types and ntype_convert(neurite_type) == "apical":
         filters = combined_filter(
-            has_apicals_filter(),
+            has_apicals_filter,
             inclusion_filter(types) 
             ) 
     elif types:
         filters= inclusion_filter(types) 
     elif ntype_convert(neurite_type) == "apical":
-        filters = has_apicals_filter()
+        filters = has_apicals_filter
     else:
         filters = None
 
@@ -183,12 +174,5 @@ def load_graph(
         print("Neuron types found:")
         for sample in dataset:
             print(f"Path: {sample.path}")
-
-    ### FEATURE SCALING:: DONE IN TRAINING
-    # # assert 1 per feature or 1 for all features
-    # if len(scalers_for_features)!=1:
-    #     assert(len(feature_extractor) == len(scalers_for_features)), "Number of feature extractors and scalers must match"
-    
-    #TODO : Implement the scaling of the features -> fit and transform
 
     return dataset
