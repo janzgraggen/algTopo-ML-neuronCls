@@ -162,7 +162,6 @@ def load_graph(
     layer_datasets = [
         MorphologyDataset.from_structured_dir(
             data_path=datapath,
-            #layer could be used alternatively to overriding filters , however filters is more flexible (e.g. for pairwise extration in same layer)
             layer = layer_entry,
             pre_transform = morphology_loader,
             pre_filter= filters,
