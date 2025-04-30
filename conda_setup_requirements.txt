@@ -1,0 +1,4 @@
+morphio==3.4.0  
+morphology-workflows=0.12.1   
+tmd==2.3.0
+cleanlab==1
