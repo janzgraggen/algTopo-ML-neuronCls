@@ -86,9 +86,11 @@ def vectorize_persistence_diagrams(
     # based on kernel density estimation (gaussian) ––––––––––––––––
     print(f'Vectiorize PD accoringig to mode: {vectorization}')
     if vectorization == "persistence_image":
-        xlim, ylim = tmd.vectorizations.get_limits(pers_diagrams)
+        xlim, ylim = tmd.analysis.get_limits(pers_diagrams)
+        #-> other tdm version: xlim, ylim = tmd.vectorizations.get_limits(pers_diagrams)
         vectorized = [
-            tmd.vectorizations.persistence_image_data(pd, xlim=xlim, ylim=ylim) for pd in pers_diagrams ## alt use gaussian_image
+            tmd.analysis.get_persistence_image_data(pd, xlim=xlim, ylim=ylim) for pd in pers_diagrams ## alt use gaussian_image
+            #-> other tdm version: tmd.vectorizations.persistence_image_data(pd, xlim=xlim, ylim=ylim) for pd in pers_diagrams
         ]
         if flatten:
             vectorized = [i.flatten() for i in vectorized]
