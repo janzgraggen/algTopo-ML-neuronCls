@@ -1,12 +1,26 @@
+# Drafts
+Examples
 
-Examples
-__pycache__
-/Examples
-Examples
+# Python
 /.DS_Store
 .DS_Store
 DS_Store
-/Examples
-.Examples
-assets/
+__pycache__
+
+# Data
+assets/datasets_flat/*
+!assets/datasets_flat/expected_structure.md
+
+assets/datasets_structured_label/*
+!assets/datasets_structured_label/expected_structure.md
+
+assets/datasets_structured_layer/*
+!assets/datasets_structured_layer/expected_structure.md
+
+# morphoclass
 morphoclass
+
+# In the making
+CLI
+
+output/*
