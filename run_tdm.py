@@ -8,7 +8,7 @@ from src.train.train_tdm import skTrainer
 
 
 ## ------------------------ DATA LOAD PARAMS --------------------------------
-DATAPATH = "assets"
+DATAPATH = "assets/datasets_structured_layer/kanari18_laylab"
 LAYER = "L3"
 TYPES = "" # or str or list of neuron types to load or string with Layer name or layer type
 NEURITE_TYPE = "apical_dendrite"
