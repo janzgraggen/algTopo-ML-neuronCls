@@ -1,4 +1,4 @@
-from src.data.load_graph import load_graph
+from src.data.load_graph import load_graph , write_features
 from src.train.train_graph import ScaledTrainer
 from morphoclass import transforms ,models,data
 import torch
@@ -13,14 +13,33 @@ LAYER = "L5"
 TYPES = ""  # or ["L5_TPC:A", ...]
 NEURITE_TYPE = "apical_dendrite"
 
-PREPROCESS = transforms.Compose([
-    # augmenting: 
-    transforms.BranchingOnlyNeurites(),
-])
 FEATURE_EXTRACTOR = transforms.Compose([
     # feature extraction. 
-    transforms.BranchingOnlyNeurites(),
-    transforms.ExtractCoordinates(),
+    
+    # GLOBAL:
+    # transforms.ExtractNumberLeaves(),
+    # transforms.ExtractNumberBranchPoints(),
+    # transforms.ExtractMaximalApicalPathLength(),
+    # transforms.TotalPathLength(),
+    # transforms.AverageBranchOrder(),
+    # transforms.AverageRadius(),
+
+    # EDGE:
+    # transforms.ExtractEdgeIndex(),
+    # transforms.ExtractDistanceWeights(),
+
+    # NODE:
+    # transforms.ExtractBranchingAngles(),
+    # transforms.ExtractConstFeature(),
+    # transforms.ExtractCoordinates(),
+    # transforms.ExtractDiameters(),
+    # transforms.ExtractIsBranching(),
+    # transforms.ExtractIsIntermediate(),
+    # transforms.ExtractIsLeaf(),
+    # transforms.ExtractIsRoot(),
+    # transforms.ExtractPathDistances(),
+    transforms.ExtractRadialDistances(),
+    # transforms.ExtractVerticalDistances()
 ])
 
 
@@ -32,14 +51,17 @@ dataset = load_graph(
     layer=LAYER,
     types=TYPES,
     neurite_type=NEURITE_TYPE,
-    preprocess_transform=PREPROCESS,
     feature_extractor=FEATURE_EXTRACTOR,
     verbose=True
 )
 
-
-from Examples.draft_vis import draft_vis
-draft_vis(dataset)
+print("\n\n\n")
+print("**********")
+write_features(
+    dataset,
+    output_dir="output/myown_features",
+    force=True
+    )
 
 # ─────────────────────────────────────────────────────
 # 3) Instantiate model
@@ -47,7 +69,7 @@ draft_vis(dataset)
 LR = 1e-2
 DEVICE = "cuda"  # or "cpu"
 TRAIN_STRATEGY = "crossval"  # "single_split" or "crossval"
-in_feat = dataset[0].x.shape[1]
+in_feat = dataset[0].x.shape[1] if dataset[0].x is not None else 0
 out_classes = len(set(dataset.labels))
 MODEL = models.ManNet(in_feat, 0, out_classes)
 OPTIMIZER = torch.optim.Adam(MODEL.parameters(), lr=LR, weight_decay=0.01)
