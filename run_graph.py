@@ -1,4 +1,4 @@
-from src.data.load_graph import load_graph , write_features
+from src.data.load_graph import load_graph , write_features, scale_graph
 from src.train.train_graph import ScaledTrainer
 from morphoclass import transforms ,models,data
 import torch
@@ -54,6 +54,8 @@ dataset = load_graph(
     feature_extractor=FEATURE_EXTRACTOR,
     verbose=True
 )
+
+dataset, fitted_scaler = scale_graph(dataset)
 
 print("\n\n\n")
 print("**********")

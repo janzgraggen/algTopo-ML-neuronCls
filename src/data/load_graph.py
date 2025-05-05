@@ -20,6 +20,7 @@ TMD_TYPES_INV = {
     v: k for k, v in TMD_TYPES.items()
     }
 
+
 def ntype_convert(typespec: str,inverse:bool = False, twoway: bool = False): 
     """
     Converts a neurite type specification to its corresponding value based on predefined mappings.
@@ -115,19 +116,27 @@ def load_graph(
     layer= List[str] or str, # "L3" or "L2" or "L4" or "L5" or ["L2", "L3"]
     types= list or str, # INCLUSIN FILTERS   # e.g. ["L2_IPC", "L2_TPC:A", "L5_UTPC", "L5_STPC", "L5_TTPC1", "L5_TTPC2"]
     neurite_type= "apical_dendrite",
-    preprocess_transform: transforms.Compose = 
-        transforms.Compose([
-            # augmenting: 
-            transforms.BranchingOnlyNeurites(),
-        ]),
+    simplify: bool = True,
+    orient: bool = True,
     feature_extractor: transforms.Compose =
         transforms.Compose([
             # feature extraction. 
             transforms.ExtractPathDistances(),
-            transforms.ExtractDiameters()
+            transforms.ExtractDiameters(),
         ]),
     verbose = True, # print the loading process
+    keep_fields = [
+        "edge_index", "edge_weight","u",
+        "x", "y","y_str", "label", "z",
+        "diagram","image", "path",
+        "tmd_neurites","__num_nodes__" # set by data.num_nodes = <value>]
+        ] 
     ):
+    """
+    x= node features
+    edge_weight= (key= edge_attr): edge weights
+    u= global features
+    """
 
     ## Defining filters according to the m_type_inclusion filter based on the types argument
     ## And the neurite type, fiter only apicals if neurite_type is "apical_dendrite"/"apocal"
@@ -149,11 +158,21 @@ def load_graph(
     ## Defining the pre_transform according to the neurite type
     if verbose:
         print("setting pretrasforms")
+        
+    ZERO_transform: list[object] = [
+        transforms.ExtractTMDNeurites(neurite_type=ntype_convert(neurite_type))
+    ]
+    if orient:
+        ZERO_transform.append(transforms.OrientApicals())
+    if simplify:
+        ZERO_transform.append(transforms.BranchingOnlyNeurites())
+    ZERO_transform = transforms.Compose(ZERO_transform)
+
     morphology_loader = transforms.Compose([
-        transforms.ExtractTMDNeurites(neurite_type=ntype_convert(neurite_type)),
-        preprocess_transform,
+        ZERO_transform,
         feature_extractor,
-        transforms.ExtractEdgeIndex(),      
+        transforms.ExtractEdgeIndex(),
+        transforms.MakeCopy(keep_fields)  
     ])
 
 
@@ -175,3 +194,31 @@ def load_graph(
             print(f"Path: {sample.path}")
 
     return dataset
+
+
+def write_features(dataset, output_dir, force: bool = False):
+    """
+    Write the features of the dataset to a file.
+    """
+    output_dir = pathlib.Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    for i, sample in enumerate(dataset):
+        if i ==0: 
+            for field, value in vars(sample).items():
+                print(f"  {field}: {value}")
+        file_name = pathlib.Path(sample.path).with_suffix(".features").name
+        sample.save(output_dir / file_name)
+
+def scale_graph(
+    dataset, 
+    scaler = transforms.FeatureRobustScaler(
+            feature_indices=[0], 
+            with_centering=False
+            )
+    ):
+
+    scaler.fit(dataset)
+    dataset.transform = transforms.Compose(
+        [transforms.MakeCopy(), scaler]
+    )
+    return dataset, scaler
