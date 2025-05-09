@@ -6,7 +6,7 @@ morphoclass extract-features \
 
 morphoclass train \
     --features-dir output/extract-features/pc-L5/apical/image-tmd-rd/ \
-    --model-config training/configs/model-decision-tree.yaml \
+    --model-config CLI/configs/model-decision-tree.yaml \
     --splitter-config CLI/configs/splitter-stratified-k-fold.yaml \
     --checkpoint-dir output/pc-L5-apical-image-tmd-rd-decision-tree/
 
