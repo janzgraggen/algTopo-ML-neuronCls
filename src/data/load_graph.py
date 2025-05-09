@@ -1,6 +1,7 @@
-from  morphoclass.data import MorphologyDataset
+from morphoclass.data import MorphologyDataset
 from morphoclass import transforms
 from morphoclass.data.filters import inclusion_filter, attribute_check, combined_filter , has_apicals_filter
+from morphoclass.data.morphology_data import MorphologyData
 
 from typing import List
 import matplotlib.pyplot as plt
@@ -120,9 +121,7 @@ def load_graph(
     orient: bool = True,
     feature_extractor: transforms.Compose =
         transforms.Compose([
-            # feature extraction. 
-            transforms.ExtractPathDistances(),
-            transforms.ExtractDiameters(),
+            transforms.ExtractRadialDistances()
         ]),
     verbose = True, # print the loading process
     keep_fields = [
@@ -166,12 +165,12 @@ def load_graph(
         ZERO_transform.append(transforms.OrientApicals())
     if simplify:
         ZERO_transform.append(transforms.BranchingOnlyNeurites())
+    ZERO_transform.append(transforms.ExtractEdgeIndex())
     ZERO_transform = transforms.Compose(ZERO_transform)
-
+    
     morphology_loader = transforms.Compose([
         ZERO_transform,
         feature_extractor,
-        transforms.ExtractEdgeIndex(),
         transforms.MakeCopy(keep_fields)  
     ])
 
@@ -208,6 +207,15 @@ def write_features(dataset, output_dir, force: bool = False):
                 print(f"  {field}: {value}")
         file_name = pathlib.Path(sample.path).with_suffix(".features").name
         sample.save(output_dir / file_name)
+
+def load_features(features_dir):
+    data = []
+    # Sorting to ensure reproducibility
+    features_dir = pathlib.Path(features_dir)
+    for path in sorted(features_dir.glob("*.features")):
+        data.append(MorphologyData.load(path))
+    dataset = MorphologyDataset(data)
+    return dataset
 
 def scale_graph(
     dataset, 
