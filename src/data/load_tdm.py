@@ -117,7 +117,7 @@ def vectorize_persistence_diagrams(
             vectorized = [
                 pw_dist_mat[:, j] for j in range(len(pers_diagrams))
             ]
-        vectorization_dict[v_type] = vectorized
+        vectorization_dict[v_type] = np.array(vectorized)
     return vectorization_dict
 
 
@@ -128,7 +128,7 @@ def load_tmd(
     # e.g. "L2_IPC", "L2_TPC:A", "L5_UTPC", "L5_STPC", "L5_TTPC1", "L5_TTPC2"
     neurite_type= "apical_dendrite", # basal_dendrite, axons, dendrites = combo of basal an apical
     pers_hom_function = "radial_distances", # radial_distances or path or else. 
-    vectorization:  Union[Literal[VECTORIZATION_TYPES], List[Literal[VECTORIZATION_TYPES]]] = "persistence_image", # persistence_image or persistence_diagram
+    vectorization:  Union[VECTORIZATION_TYPES, List[VECTORIZATION_TYPES]] = "persistence_image", # persistence_image or persistence_diagram
     M: int = 0, # for sliced wasserstein
     k: int = 0, # for landscape
     m: int = 0,  # for landscape
