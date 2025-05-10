@@ -48,7 +48,7 @@ def compute_pairwise_distance_matrix(
 
 def vectorize_persistence_diagrams(
     pers_diagrams, 
-    vectorization: Literal['persistence_image', 'wasserstein', 'bottlenek', 'slice_wasserstein','landscape'] =  "persistence_image",
+    vectorization: Union[Literal[VECTORIZATION_TYPES], List[Literal[VECTORIZATION_TYPES]]] = "persistence_image",
     M: int = None, # for sliced wasserstein
     k: int = None, # for landscape
     m: int = None,  # for landscape
@@ -79,37 +79,46 @@ def vectorize_persistence_diagrams(
     
     Returns:
     --------
-    vectorized : list
-        A list of vectorized representations of the input persistence diagrams.
-        if multiple vectiorizatons are given: reurn a dict with keys as vectorization methods and values as the vectorized data.
+    vectorized : dict
+        ->reurn a dict with keys as vectorization methods and values as the vectorized data.
+         keys: 
+            "vectorization" (e.g. "persistence_image", "wasserstein", etc.)
+         values: 
+             A list of vectorized representations of the input persistence diagrams.
     """
-    # based on kernel density estimation (gaussian) ––––––––––––––––
-    print(f'Vectiorize PD accoringig to mode: {vectorization}')
-    if vectorization == "persistence_image":
-        xlim, ylim = tmd.analysis.get_limits(pers_diagrams)
-        #-> other tdm version: xlim, ylim = tmd.vectorizations.get_limits(pers_diagrams)
-        vectorized = [
-            tmd.analysis.get_persistence_image_data(pd, xlim=xlim, ylim=ylim) for pd in pers_diagrams ## alt use gaussian_image
-            #-> other tdm version: tmd.vectorizations.persistence_image_data(pd, xlim=xlim, ylim=ylim) for pd in pers_diagrams
-        ]
-        if flatten:
-            vectorized = [i.flatten() for i in vectorized]
-    ## based on function approximation –––––––––––––––––––––––––––––––
-    elif vectorization == "landscape":
-        vectorized = [
-            landscape(pd, k=k, m=m) for pd in pers_diagrams # k and m for landscape 
-        ]
+    #make iterable
+    if type(vectorization) ==str:
+        vectorization = [vectorization]
 
-    ## based on pairwise distance matrix ––––––––––––––––––
-    else:
-        pw_dist_mat = compute_pairwise_distance_matrix(
-            pers_diagrams, distance=vectorization, M=M # M for sliced wasserstein
-        )
-        vectorized = [
-            pw_dist_mat[:, j] for j in range(len(pers_diagrams))
-        ]
+    vectorization_dict = {}
+    for v_type in vectorization:
+        # based on kernel density estimation (gaussian) ––––––––––––––––
+        print(f'Vectiorize PD accoringig to mode: {v_type}')
+        if v_type == "persistence_image":
+            xlim, ylim = tmd.analysis.get_limits(pers_diagrams)
+            #-> other tdm version: xlim, ylim = tmd.vectorizations.get_limits(pers_diagrams)
+            vectorized = [
+                tmd.analysis.get_persistence_image_data(pd, xlim=xlim, ylim=ylim) for pd in pers_diagrams ## alt use gaussian_image
+                #-> other tdm version: tmd.vectorizations.persistence_image_data(pd, xlim=xlim, ylim=ylim) for pd in pers_diagrams
+            ]
+            if flatten:
+                vectorized = [i.flatten() for i in vectorized]
+        ## based on function approximation –––––––––––––––––––––––––––––––
+        elif v_type == "landscape":
+            vectorized = [
+                landscape(pd, k=k, m=m) for pd in pers_diagrams # k and m for landscape 
+            ]
 
-    return vectorized
+        ## based on pairwise distance matrix ––––––––––––––––––
+        else:
+            pw_dist_mat = compute_pairwise_distance_matrix(
+                pers_diagrams, distance=v_type, M=M # M for sliced wasserstein
+            )
+            vectorized = [
+                pw_dist_mat[:, j] for j in range(len(pers_diagrams))
+            ]
+        vectorization_dict[v_type] = vectorized
+    return vectorization_dict
 
 
 def load_tmd(
@@ -119,7 +128,7 @@ def load_tmd(
     # e.g. "L2_IPC", "L2_TPC:A", "L5_UTPC", "L5_STPC", "L5_TTPC1", "L5_TTPC2"
     neurite_type= "apical_dendrite", # basal_dendrite, axons, dendrites = combo of basal an apical
     pers_hom_function = "radial_distances", # radial_distances or path or else. 
-    vectorization:  Union[VECTORIZATION_TYPES, List[VECTORIZATION_TYPES]] = "persistence_image", # persistence_image or persistence_diagram
+    vectorization:  Union[Literal[VECTORIZATION_TYPES], List[Literal[VECTORIZATION_TYPES]]] = "persistence_image", # persistence_image or persistence_diagram
     M: int = 0, # for sliced wasserstein
     k: int = 0, # for landscape
     m: int = 0,  # for landscape
@@ -202,27 +211,13 @@ def load_tmd(
         if (lambda x: True if x else False)(tmd.methods.get_ph_neuron(j,feature=pers_hom_function, neurite_type=neurite_type))
     ]
 
-    ## handle multi vectorization
-    if type(vectorization) ==list: 
-        vectorized_pds = {}
-        for i in vectorization:
-            vectorized_pds[i] = vectorize_persistence_diagrams(
-                pers_diagrams, 
-                vectorization=i, 
-                flatten=flatten,
-                M=M, k=k, m=m
-            )
-    ## handle single vectorization
-    else:
-        vectorized_pds = {}
-        vectorized_pds[vectorization] = vectorize_persistence_diagrams(
-            pers_diagrams, 
-            vectorization=vectorization, 
-            flatten=flatten,
-            M=M, k=k, m=m
+    vectorized_pds = vectorize_persistence_diagrams(
+        pers_diagrams, 
+        vectorization, 
+        flatten=flatten,
+        M=M, k=k, m=m
         )
 
-    
     return (labels, vectorized_pds, pers_diagrams) if return_pds else (labels, vectorized_pds)
 
 
