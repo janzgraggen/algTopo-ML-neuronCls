@@ -1,4 +1,4 @@
-from src.data.load_graph import load_graph , write_features, scale_graph
+from src.data.load_graph import load_graph , write_features, scale_graph, add_vecotized_pd
 from src.train.train_graph import ScaledTrainer
 from morphoclass import transforms ,models,data
 import torch
@@ -17,8 +17,8 @@ FEATURE_EXTRACTOR = transforms.Compose([
     # feature extraction. 
     
     # GLOBAL:
-    # transforms.ExtractNumberLeaves(),
-    # transforms.ExtractNumberBranchPoints(),
+    #transforms.ExtractNumberLeaves(),
+    #transforms.ExtractNumberBranchPoints(),
     # transforms.ExtractMaximalApicalPathLength(),
     # transforms.TotalPathLength(),
     # transforms.AverageBranchOrder(),
@@ -42,6 +42,12 @@ FEATURE_EXTRACTOR = transforms.Compose([
     # transforms.ExtractVerticalDistances()
 ])
 
+PH_F = "radial_distances"   
+VECTORIZATION = ["persistence_image", "wasserstein","bottleneck","sliced_wasserstein", "landscape"] # or "landscape" or "bottleneck" or "wasserstein" or "slice_wasserstein"
+FLATTEN = True # flatten the image
+M_SW = 20 #  sliced_wasserstein: number of slices
+K_LS = 1 #  landscape: number of landscapes
+M_LS = 1 #  landscape:resolution
 
 # ─────────────────────────────────────────────────────
 # 2) Load data
@@ -52,15 +58,25 @@ dataset = load_graph(
     types=TYPES,
     neurite_type=NEURITE_TYPE,
     feature_extractor=FEATURE_EXTRACTOR,
-    verbose=True
+    verbose=False
 )
 
 dataset, fitted_scaler = scale_graph(dataset)
 
-print("\n\n\n")
-print("**********")
-write_features(
+dataset_extended = add_vecotized_pd(
     dataset,
+    pers_hom_function="radial_distances",
+    vectorization=['persistence_image', 'wasserstein', 'bottleneck', 'sliced_wasserstein', 'landscape'],
+    flatten=False,
+    )
+
+print("**********")
+print("after passing through add_vecotized_pd")
+for key , val in vars(dataset_extended[0]).items():
+    print(key, val)
+
+write_features(
+    dataset_extended,
     output_dir="output/myown_features",
     force=True
     )
@@ -79,22 +95,3 @@ OPTIMIZER = torch.optim.Adam(MODEL.parameters(), lr=LR, weight_decay=0.01)
 # ─────────────────────────────────────────────────────
 # 5) Build trainer & run
 # ─────────────────────────────────────────────────────
-trainer = ScaledTrainer(MODEL, dataset, optimizer=OPTIMIZER, loader_class=data.MorphologyDataLoader)
-
-# history = trainer.train_single_split(
-#     split_ratio=0.8,
-#     n_epochs=100,
-#     batch_size=16,
-#     load_best=True,
-#     )
-# history = trainer.train_crossval(
-#     n_splits=5,
-#     n_epochs=100,
-#     batch_size=16,
-#     load_best=False,
-#     )
-
-# #print("Training complete. History keys:", history[0].keys() if isinstance(history, list) else history.keys())
-# for k,v in history.items():
-#     print("************")
-#     print(f"{k}:\n    {v}")
