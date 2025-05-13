@@ -5,7 +5,7 @@ from sklearn.svm import SVC
 from collections.abc import Iterable
 from typing import Union
 from sklearn.model_selection import BaseCrossValidator
-
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
 
 def train_sklearn_classifier(labels,pers_image, sk_clf, train_test_ratio):
@@ -87,6 +87,17 @@ class skTrainer():
     def train_crossvalidation(self, vectorization_select = False):
         """
         Train the classifier using cross-validation and calculate accuracies.
+        Parameters
+        ----------
+        vectorization_select : str or list of str, optional
+            The vectorization method(s) to use for training. If False, all methods are used.
+            Default is False.
+        Returns
+        -------
+        avg_accuracies : dict
+            A dictionary containing the average accuracies for each vectorization method.
+        -------
+        
         """
         avg_accuracies = {}
         print("\n================================")
@@ -117,6 +128,21 @@ class skTrainer():
     def train_gridsearch(self,vectorization_select = False, return_estimator: bool = False):
         """
         Train the classifier using Gridsearch and cross-validation and calculate accuracies.
+        Parameters
+        ----------
+        vectorization_select : str or list of str, optional
+            The vectorization method(s) to use for training. If False, all methods are used.
+            Default is False.
+        return_estimator : bool, optional
+            If True, return the best estimator for each vectorization method.
+            Default is False.
+        Returns
+        -------
+        best_average_accuracies : dict
+            A dictionary containing the best average accuracies for each vectorization method.
+        best_estimators : dict
+            A dictionary containing the best estimators for each vectorization method.
+        -------
         """
         best_average_accuracies = {}
         best_estimators = {}
@@ -124,20 +150,23 @@ class skTrainer():
         print(f"Training a {self.cls.__class__.__name__}-Classifier with GridSearchCV...")
         print("––––")
         if vectorization_select:
-            data_dict = {k: self.X[k] for k in vectorization_select}
+            if type(vectorization_select) == str:
+                data_dict = {vectorization_select: self.X[vectorization_select]}
+            else: data_dict = {k: self.X[k] for k in vectorization_select}
         else:
             data_dict = self.X
-
-        for name in data_dict:
-            data = data_dict[name]
-            #grid search doc:
-            #       https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html#sklearn.model_selection.GridSearchCV
-            self.gs.fit(np.array(data), np.array(self.y))
-            best_estimators[name] = self.gs.best_estimator_
-            best_average_accuracies[name] = self.gs.best_score_
-            print(f"Average accuracy of Data = {name}: {self.gs.best_score_:.6f}")
-            print(f"Best parameters for training Data ={name}: {self.gs.best_params_}")
-            print("––––")
-        return best_average_accuracies, best_estimators if  return_estimator else best_average_accuracies
+            for vec in data_dict:
+                data = data_dict[vec]
+                #grid search doc:
+                #       https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html#sklearn.model_selection.GridSearchCV
+                self.gs.fit(np.array(data), np.array(self.y))
+                best_estimators[vec] = self.gs.best_estimator_
+                best_average_accuracies[vec] = self.gs.best_score_
+                print(f"Average accuracy of Data = {vec}: {self.gs.best_score_:.6f}")
+                print(f"Best parameters for training Data ={vec}: {self.gs.best_params_}")
+                print("––––")
+        
+        #return best_average_accuracies, best_estimators if  return_estimator else best_average_accuracies
+        return best_average_accuracies
         
     

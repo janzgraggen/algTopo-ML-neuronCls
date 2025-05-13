@@ -7,7 +7,7 @@ from tda_toolbox.diagram import bottleneck_distance, wasserstein_distance, slice
 from tda_toolbox.diagram import landscape
 from tda_toolbox.diagram import gaussian_image
 
-VECTORIZATION_TYPES = Literal['persistence_image', 'wasserstein', 'bottleneck', 'slice_wasserstein', 'landscape']
+VECTORIZATION_TYPES = Literal['persistence_image', 'wasserstein', 'bottleneck', 'sliced_wasserstein', 'landscape']
 
 def pd_distance_wrapper(
     distance: Literal['wasserstein', 'bottleneck', 'sliced_wasserstein'] = "wasserstein",
@@ -89,6 +89,16 @@ def vectorize_persistence_diagrams(
     #make iterable
     if type(vectorization) ==str:
         vectorization = [vectorization]
+
+    #the landscape vectorization needs k and m and has no error handling
+    if "landscape" in vectorization:
+        if (k is None) or (m is None):
+            raise ValueError("k and m : int >0, must be given for landscape vectorization")
+        
+    if "sliced_wasserstein" in vectorization:
+        if (M is None):
+            raise ValueError("M : int >0 ,must be given for sliced_wasserstein vectorization")
+    
 
     vectorization_dict = {}
     for v_type in vectorization:
@@ -194,7 +204,10 @@ def load_tmd(
         types = [x for x in os.listdir(datapath + "/" +layer + "/")]
     if type(types) == str: 
         types = [types]
-    types = [ x.split("_")[0] + "/" + x  for x in types]
+    if types[0][0] == "L" :
+        types = [ x.split("_")[0] + "/" + x  for x in types]
+    else: 
+        types = [layer + "/" + x for x in types]
 
 
     if verbose:
