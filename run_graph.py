@@ -9,6 +9,7 @@ import morphoclass
 # 1) Data loading parameters
 # ─────────────────────────────────────────────────────
 PATH = "assets/datasets_structured_layer/kanari18_laylab"
+OUT_PATH = "output/multiconcat_features"
 LAYER = "L5"
 TYPES = ""  # or ["L5_TPC:A", ...]
 NEURITE_TYPE = "apical_dendrite"
@@ -44,10 +45,10 @@ FEATURE_EXTRACTOR = transforms.Compose([
 
 PH_F = "radial_distances"   
 VECTORIZATION = ["persistence_image", "wasserstein","bottleneck","sliced_wasserstein", "landscape"] # or "landscape" or "bottleneck" or "wasserstein" or "slice_wasserstein"
-FLATTEN = True # flatten the image
+FLATTEN = False # flatten the image
 M_SW = 20 #  sliced_wasserstein: number of slices
-K_LS = 1 #  landscape: number of landscapes
-M_LS = 1 #  landscape:resolution
+K_LS = 10 #  landscape: number of landscapes
+M_LS = 5 #  landscape:resolution
 
 # ─────────────────────────────────────────────────────
 # 2) Load data
@@ -61,23 +62,27 @@ dataset = load_graph(
     verbose=False
 )
 
-dataset, fitted_scaler = scale_graph(dataset)
+#dataset, fitted_scaler = scale_graph(dataset)
 
 dataset_extended = add_vecotized_pd(
     dataset,
-    pers_hom_function="radial_distances",
-    vectorization=['persistence_image', 'wasserstein', 'bottleneck', 'sliced_wasserstein', 'landscape'],
-    flatten=False,
+    pers_hom_function=PH_F,
+    vectorization=VECTORIZATION,
+    flatten=FLATTEN,
+    M=M_SW,
+    k=K_LS,
+    m=M_LS,
     )
 
+dataset_extended_scaled, fitted_scaler = scale_graph(dataset_extended)
 print("**********")
 print("after passing through add_vecotized_pd")
-for key , val in vars(dataset_extended[0]).items():
+for key , val in vars(dataset_extended_scaled[0]).items():
     print(key, val)
 
 write_features(
     dataset_extended,
-    output_dir="output/myown_features",
+    output_dir=OUT_PATH,
     force=True
     )
 
@@ -85,7 +90,7 @@ write_features(
 # 3) Instantiate model
 # ─────────────────────────────────────────────────────
 LR = 1e-2
-DEVICE = "cuda"  # or "cpu"
+DEVICE = "cpu"  # or "cpu"
 TRAIN_STRATEGY = "crossval"  # "single_split" or "crossval"
 in_feat = dataset[0].x.shape[1] if dataset[0].x is not None else 0
 out_classes = len(set(dataset.labels))
