@@ -1,0 +1,24 @@
+batch_size: 2
+model_class: src.models.MultiConcat.MultiConcat
+model_params:
+  # General: 
+  n_classes: 4
+  bn: False
+  embedding_dim: 128
+
+  # GNN:
+  edge_weight_idx: null
+  flow: target_to_source
+  lambda_max: 3.0
+  n_node_features: 1
+  normalization: sym
+  pool_name: avg
+
+  # Vectorization/Morphometrics:
+  vectorizations:
+    - persistence_image
+
+n_epochs: 100
+optimizer_class: torch.optim.Adam
+optimizer_params:
+  lr: 0.005
