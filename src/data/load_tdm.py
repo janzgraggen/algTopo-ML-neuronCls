@@ -3,9 +3,9 @@ import tmd
 import os
 from typing import Union, List, Literal
 
-from tda_toolbox.diagram import bottleneck_distance, wasserstein_distance, sliced_wasserstein_distance  # M for sliced, k, m for landscape
-from tda_toolbox.diagram import landscape
-from tda_toolbox.diagram import gaussian_image
+from src.tda_toolbox.diagram import bottleneck_distance, wasserstein_distance, sliced_wasserstein_distance  # M for sliced, k, m for landscape
+from src.tda_toolbox.diagram import landscape
+from src.tda_toolbox.diagram import gaussian_image
 
 VECTORIZATION_TYPES = Literal['persistence_image', 'wasserstein', 'bottleneck', 'sliced_wasserstein', 'landscape']
 

@@ -15,7 +15,7 @@ This repository contains tools and scripts for:
 * Deep learning-based neuron classification with **morphoclass**
 * Custom multimodal feature extraction and training
 
-📎 *Note:* The `tda_toolbox` folder is adapted from [this repo](https://github.com/Eagleseb/tda_toolbox) by Sébastien Morand with minor updates for Python compatibility.
+📎 *Note:* The `src/tda_toolbox` folder is adapted from [this repo](https://github.com/Eagleseb/tda_toolbox) by Sébastien Morand with minor updates for Python compatibility.
 
 📎 *Note:* Some methods are adapted or inspired form[`morphoclass`](https://github.com/BlueBrain/morphoclass) by BlueBrain. Furthermore the Deep learning Training loop is entirely accessed via CLI tool of `morphoclass`.
 
