@@ -97,7 +97,7 @@ assets/datasets_structured_layer/Layer/Label/file
 
 ### Configuration
 
-Update the following parameters in `run_tdm.py`:
+Update the following parameters in `run_TrainTdmML.py`:
 
 ```python
 DATAPATH = "Data/"

@@ -1,6 +1,6 @@
 
 ## Feature Extraction
-python run_graph.py
+python run_MultiFeatureExtract.py 
 
 export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
