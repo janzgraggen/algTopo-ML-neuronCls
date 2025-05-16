@@ -1,5 +1,6 @@
 # Drafts
 Examples
+src/data/load_graph_old.py
 
 # Python
 /.DS_Store
@@ -20,6 +21,5 @@ assets/datasets_structured_layer/*
 # morphoclass
 morphoclass
 
-
+# output
 output/*
-layer_trainers.pkl
