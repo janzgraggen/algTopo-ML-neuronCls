@@ -1,7 +1,7 @@
 morphoclass --verbose train \
     --features-dir output/myown_features/ \
-    --model-config CLI/configs/model-gnn.yaml \
-    --splitter-config CLI/configs/splitter-stratified-k-fold.yaml \
+    --model-config src/configs/model-gnn.yaml \
+    --splitter-config src/configs/splitter-stratified-k-fold.yaml \
     --checkpoint-dir output/gnn_myfeatures_check/
 
 morphoclass --verbose evaluate performance \

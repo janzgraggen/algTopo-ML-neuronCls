@@ -6,8 +6,8 @@ morphoclass --verbose extract-features \
 
 morphoclass --verbose train \
     --features-dir output/extract-features/pc-L5/apical/image-tmd-rd/ \
-    --model-config CLI/configs/model-decision-tree.yaml \
-    --splitter-config CLI/configs/splitter-stratified-k-fold.yaml \
+    --model-config src/configs/model-decision-tree.yaml \
+    --splitter-config src/configs/splitter-stratified-k-fold.yaml \
     --checkpoint-dir output/pc-L5-apical-image-tmd-rd-decision-tree/
 
 morphoclass --verbose evaluate performance \
