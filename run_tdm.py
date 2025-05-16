@@ -103,14 +103,14 @@ if EXP_L5_CLASS_DISTINGUISH or EXP_L5_SUBCLASS:
 # Load the layer_trainers dictionary from the pickle file
 if EXP_MULTILAYERTRAIN:
     try: 
-        with open("layer_trainers.pkl", "rb") as f:
+        with open("output/layer_trainers.pkl", "rb") as f:
             layer_trainers = pickle.load(f)
 
         # Verify the loaded data
         for layer, trainer in layer_trainers.items():
             print(f"Loaded trainer for layer: {layer}")
     except FileNotFoundError:
-        print("layer_trainers.pkl not found. Creating a new one.")
+        print("output/layer_trainers.pkl not found. Creating a new one.")
         # If the file doesn't exist, create a new layer_trainers dictionary
 
         layer_trainers = {}
@@ -138,7 +138,7 @@ if EXP_MULTILAYERTRAIN:
         )
 
         # Save the layer_trainers dictionary to a file
-        with open("layer_trainers.pkl", "wb") as f:
+        with open("output/layer_trainers.pkl", "wb") as f:
             pickle.dump(layer_trainers, f)
 
 
