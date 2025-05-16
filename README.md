@@ -61,7 +61,7 @@ Depending on the structure of the dataset place it in one of the subdir's:
 
 where the last one is the most commonly used for this project and expects:
 ```
-Dataset/Layer/Label/file 
+assets/Dataset/Layer/Label/file 
 ```
 to be placed in **assets/datasets_structured_layer/**
 
