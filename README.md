@@ -1,260 +1,256 @@
-# algTopo-ML-neuronCls
+# 🧠 algTopo-ML-neuronCls
+> Master Semester Project (Spring 2025):
 
-Repo for the Master Semester project: 
-  - Using algebraic topology and ML to cluster and classify neurons. 
-  - Spring semester 2025
-  - Project by Jan Zgraggen, supervised by Lida Kanari 
-  
-Note: The tda_toolbox folder contains files from [this repo](https://github.com/Eagleseb/tda_toolbox) by Sébastien Morand. I modified them slightly to be up to date with newer versions of python and some libraries. 
+> **Clustering and Classifying Neurons using Algebraic Topology and Machine Learning**
 
-### Requirements
+> Project By Jan Zgraggen, Supervised by Lida Kanari
 
-Due to issues with versions and on Mac architecture use : 
+---
+
+## 📁 Overview
+
+This repository contains tools and scripts for:
+
+* Traditional ML classification using topological data analysis (TDA)
+* Deep learning-based neuron classification with **morphoclass**
+* Custom multimodal feature extraction and training
+
+📎 *Note:* The `tda_toolbox` folder is adapted from [this repo](https://github.com/Eagleseb/tda_toolbox) by Sébastien Morand with minor updates for Python compatibility.
+
+📎 *Note:* Some methods are adapted or inspired form[`morphoclass`](https://github.com/BlueBrain/morphoclass) by BlueBrain. Furthermore the Deep learning Training loop is entirely accessed via CLI tool of `morphoclass`.
+
+---
+
+## 🗂️ Table of Contents
+
+1. [Requirements](#-requirements)
+2. [Classification with Traditional Models](#-classification-with-traditional-models)
+
+   * [Dataset Setup](#dataset-preparation)
+   * [Configuration](#configuration)
+   * [Training & Evaluation](#training-the-model)
+3. [Classification with Deep Learning](#-classification-using-deeplearning)
+
+   * [Using morphoclass CLI](#21-using-morphoclass-via-cli)
+   * [Multimodal Pipeline](#22-creating-and-training-with-multimodal-data)
+4. [Technical Notes & Fixes](#-remarks)
+
+---
+
+## ⚙️ Requirements
+### Env
+Set up using:
+
 ```bash
 ./requirements_setup.sh
 ```
 
-which essentially does the following: 
+This script:
+
+* Checks for an existing `morpho` conda environment
+* Creates the environment with Python 3.11
+* Installs TDA and PyTorch dependencies
+* Clones and installs `morphoclass`
+* Cleans up the cloned directory
+
+<details>
+<summary>🔧 Click to expand manual steps</summary>
 
 ```bash
-# Check if the morpho environment already exists
-if conda info --envs | grep -q "^morpho "; then
-    echo "Conda environment 'morpho' already exists. Skipping creation."
-    exit 0
-fi
-```
-```bash
-# create conda environment for morphoclass
 conda create --name morpho python=3.11
 conda activate morpho
-```
-```bash
-#install morphoclass prerequisites
 conda install -c conda-forge dionysus
 pip install -r requirements.txt
 pip install torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.6.0+cpu.html
-```
-```bash
-# install mophoroclass
-git clone  git@github.com:lidakanari/morphoclass.git
-cd morphoclass
-./install.sh
-cd ..
-```
-```bash
-# delete the morphoclass repo
+
+git clone git@github.com:lidakanari/morphoclass.git
+cd morphoclass && ./install.sh && cd ..
 rm -rf morphoclass
 ```
 
-# Usage of tdm methods (run_tdm.py)
-This python file reproduces some results from [Kanari et al. 2019](https://academic.oup.com/cercor/article/29/4/1719/5304727).
+</details>
+---
 
 
-## Dataset Preparation
-The the Dataset used is Reconstructions.zip which is found [here](https://zenodo.org/record/5909613#.YygtAmxBw5k)
+### Dataset Preparation
 
-For reproduction of the result place the dataset in the `assets/` directory. 
-Depending on the structure of the dataset place it in one of the subdir's:
-- datasets_flat
-- datasets_structured_label
-- datasets_structured_layer
+Download the dataset [here (Reconstructions.zip)](https://zenodo.org/record/5909613#.YygtAmxBw5k)
+Place it inside `assets/` under one of the following:
 
-where the last one is the most commonly used for this project and expects:
 ```
-assets/Dataset/Layer/Label/file 
+assets/
+├── datasets_flat/
+├── datasets_structured_label/
+└── datasets_structured_layer/  ← Recommended
 ```
-to be placed in **assets/datasets_structured_layer/**
 
-## Configuration
+Expected format for structured data:
 
-### Configuration Parameters
-Before running the script, adjust the following configuration parameters to suit your data and experiment:
+```
+assets/datasets_structured_layer/Layer/Label/file
+```
+
+---
+
+## 🧪 Classification with Traditional Models
+
+
+### Configuration
+
+Update the following parameters in `run_tdm.py`:
 
 ```python
-DATAPATH = "Data/"  # Path to the dataset
-LAYER = "L3"        # Layer type (e.g., "L3")
-NEURITE_TYPE = "apical_dendrite"  # Neurite type (e.g., "apical_dendrite")
-PH_F = "radial_distances"  # Persistence homology function (e.g., "radial_distances")
-VECTORIZATION = ["persistence_image", "wasserstein", "bottleneck", "sliced_wasserstein", "landscape"]  # List of vectorization methods
-
-# Persistence image parameters
-FLATTEN = True  # Flatten the image for vectorization
-
-# Sliced Wasserstein parameters
-M_SW = 20  # Number of slices for sliced Wasserstein
-
-# Landscape parameters
-K_LS = 1   # Number of landscapes
-M_LS = 1   # Resolution for landscapes
-
-# Classifier and Cross-validation settings
-CLS = sklearn.svm.SVC()  # Classifier (e.g., Support Vector Classifier)
-CV = sklearn.model_selection.StratifiedKFold(n_splits=3, shuffle=True, random_state=42)  # Cross-validation settings
-
-GRID = sklearn.model_selection.GridSearchCV(  # GridSearch for hyperparameter tuning
-    param_grid={
-        'C': [1, 10, 100, 1000],
-        'kernel': ['linear', 'rbf'],
-        'class_weight': ['balanced', None],
-        'gamma': [0.001, 0.0001],
-    },
-    estimator=CLS,
-    cv=CV,
-)
+DATAPATH = "Data/"
+LAYER = "L3"
+NEURITE_TYPE = "apical_dendrite"
+PH_F = "radial_distances"
+VECTORIZATION = ["persistence_image", "wasserstein", "landscape"]
+FLATTEN = True
+M_SW = 20
+K_LS = 1
+M_LS = 1
+CLS = sklearn.svm.SVC()
+CV = sklearn.model_selection.StratifiedKFold(**args**)
+GRID = sklearn.model_selection.GridSearchCV( **args**)
 ```
 
-### Loading Data
+---
 
-The `load_data` function is used to load the dataset and apply persistence image and vectorization.
+### Loading and Training
+
+**Data Loading:**
 
 ```python
-labels, pers_images = load_data(
-    datapath=DATAPATH,
-    types=LAYER,
-    neurite_type=NEURITE_TYPE,
-    pers_hom_function=PH_F,
-    vectorization=VECTORIZATION,
-    flatten=FLATTEN,
-    M=M_SW,
-    k=K_LS,
-    m=M_LS
-)
+labels, pers_images = load_data(...)
 ```
 
-### Training the Model
-
-The `skTrainer` class is used to train the model with different vectorization methods. You can specify the classifier (e.g., SVC, DecisionTree) and the cross-validation method.
+**Training the Model:**
 
 ```python
-trainer = skTrainer(
-    data=pers_images,
-    labels=labels,
-    cls=CLS,
-    crosvalidate=CV,
-    gridsearch=GRID
-)
-
-# Loop through vectorization methods and train the model
+trainer = skTrainer(data=pers_images, labels=labels, ...)
 for vector_method in VECTORIZATION:
     trainer.train_crossvalidation(vectorization_select=vector_method)
 ```
 
-### Hyperparameter Tuning with Grid Search
-
-You can perform hyperparameter tuning by calling the `train_gridsearch` method:
+**Grid Search:**
 
 ```python
 trainer.train_gridsearch()
 ```
 
-This will search for the best hyperparameters for the SVM classifier using GridSearchCV.
+---
 
-## Notes
+## 🤖 Classification Using DeepLearning
 
-- You can now set up the experiment choosing `LAYER`, `Neutrite Type`, `Function for the TMD persistent homology algo`
-and the `Vectorization`
-- You can also easily switch between different classifiers (e.g., `DecisionTreeClassifier`, `QuadraticDiscriminantAnalysis`) by changing the `CLS` parameter.
+### 2.1 Using morphoclass via CLI
 
-# Usage of graph methods (run_graph.py)
-This python file reproduces some results from [Kanari et al. 2024](https://www.biorxiv.org/content/10.1101/2024.09.13.612635v1).
+Shell scripts under `CLI/` automate:
 
+* Feature extraction
+* Training
+* Evaluation
 
+**Examples:**
 
-
-### Using morphoclass via CLI
-First the CLI directory contains shell scripts for
- - feature extraction
- - training
- - evaluation
-
-of different model configurations. The commands for the such look like the following for feature extraction: 
 ```bash
-morphoclass extract-features \
-    assets/datasets_structured_layer/pyramidal-cells/L5/dataset.csv \
-    apical \
-    image-tmd-rd \
-    output/extract-features/pc-L5/apical/image-tmd-rd/ --force
-```
-for training: 
-```bash
-morphoclass train \
-    --features-dir output/extract-features/pc-L5/apical/image-tmd-rd/ \
-    --model-config CLI/configs/model-decision-tree.yaml \
-    --splitter-config CLI/configs/splitter-stratified-k-fold.yaml \
-    --checkpoint-dir output/pc-L5-apical-image-tmd-rd-decision-tree/
-```
-and for evaluation: 
-```bash
-morphoclass evaluate performance \
-    output/pc-L5-apical-image-tmd-rd-decision-tree/checkpoint.chk \
-    output/evaluation_report.html
+# Feature extraction
+morphoclass extract-features input.csv apical image-tmd-rd output/dir --force
+
+# Training
+morphoclass train --features-dir ... --model-config ... --splitter-config ... --checkpoint-dir ...
+
+# Evaluation
+morphoclass evaluate performance model.chk output/report.html
 ```
 
-The .sh can be used to reproduce some results. 
+---
 
-### Creating more flexible features
+### 2.2 Creating and Training with Multimodal Data
 
-There is only an selection of features supported via comand line. 
-Therefore I implemented more general feature extraction based on morphoclass's soucecode that supports all extractions which are supported by the package. 
+#### 2.2.1 Feature Extraction (Custom)
 
-#### Config: 
-Similar to above: 
-```bash
+`run_MultiFeatureExtract.py` allows:
+
+* Arbitrary Graph, TDA and morphometric feature extraction
+* Combination and normalization
+
+**Supported Parameters:**
+
+```python
 PATH = "assets/datasets_structured_layer/kanari18_laylab"
+OUT_PATH = "output/multiconcat_features_full"
 LAYER = "L5"
 TYPES = ""  # or ["L5_TPC:A", ...]
 NEURITE_TYPE = "apical_dendrite"
+FEATURE_EXTRACTOR = transforms.Compose([**transforms**])
+CONFIG_MORPHOMETRICS = "CLI/configs/feature-morphometrics.yaml"
+NORMALIZE = True # normalize the features
+PH_F = "radial_distances"   
+VECTORIZATION = ["persistence_image", "wasserstein","bottleneck","sliced_wasserstein", "landscape"] 
+FLATTEN = False # flatten the image
+M_SW = 20 #  sliced_wasserstein: number of slices
+K_LS = 10 #  landscape: number of landscapes
+M_LS = 5 #  landscape:resolution
 ```
 
-#### Available features: 
+---
+
+#### 2.2.2 Feature Handling via `MorphologyDatasetManager`
+
+```python
+# Load
+mdm = MorphologyDatasetManager(...)
+
+# Add features
+mdm.add_vecotized_pd(...)
+mdm.add_morphometrics(...)
+
+# Save or read
+mdm.write_features(...)
+mdm_from_dir = MorphologyDatasetManager.from_features_dir(path)
+```
+
+---
+
+#### 2.2.3 Model Training
+Export Pythonpath to make custom models findable by the morphoclass CLI
 ```bash
-FEATURE_EXTRACTOR = transforms.Compose([
-    # feature extraction. 
-    
-    # GLOBAL:
-    # transforms.ExtractNumberLeaves(),
-    # transforms.ExtractNumberBranchPoints(),
-    # transforms.ExtractMaximalApicalPathLength(),
-    # transforms.TotalPathLength(),
-    # transforms.AverageBranchOrder(),
-    # transforms.AverageRadius(),
-
-    # EDGE:
-    # transforms.ExtractEdgeIndex(),
-    # transforms.ExtractDistanceWeights(),
-
-    # NODE:
-    # transforms.ExtractBranchingAngles(),
-    # transforms.ExtractConstFeature(),
-    # transforms.ExtractCoordinates(),
-    # transforms.ExtractDiameters(),
-    # transforms.ExtractIsBranching(),
-    # transforms.ExtractIsIntermediate(),
-    # transforms.ExtractIsLeaf(),
-    # transforms.ExtractIsRoot(),
-    # transforms.ExtractPathDistances(),
-    #transforms.ExtractRadialDistances(),
-    # transforms.ExtractVerticalDistances()
-])
+export PYTHONPATH=".:$PYTHONPATH"
 ```
-#### Data loading, scaling writing and fetching is supported via: 
-loading: 
+
+Train custom models with saved multimodal features via morphoclass CLI:
+
 ```bash
-load_graph(**kwargs)
+morphoclass --verbose train \
+    --features-dir output/saved_custom_features/ \
+    --model-config src/configs/model-customModel.yaml \
+    --splitter-config src/configs/splitter-stratified-k-fold.yaml \
+    --checkpoint-dir output/customModel_checkpoint/
+
 ```
 
-scaling: 
+📎 *Note:* shell scripts providing the terminal commands for the experiments presented in the report, as well as tests are found in `scripts`. Paste commands to terminal for execution. 
+
+---
+
+## 🧵 Remarks
+
+### Fixing Segmentation Faults (PyTorch CPU)
+
+💥 Issue: `ReLU()` (or other PyTorch functions) can crash on macOS/Linux due to threading in OpenMP/MKL
+
+🛠️ Solution: Limit threads
+
 ```bash
-scale_graph(**kwargs)
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
 ```
 
-writing: 
+Then safely run:
+
 ```bash
-write_featuers(**kwargs)
-```
-fetching: 
-```bash
-load_features(**kwargs)
+morphoclass train --features-dir ... --model-config model-gnn.yaml ...
 ```
 
+---
 
