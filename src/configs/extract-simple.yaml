@@ -1,0 +1,45 @@
+PATH: "assets/datasets_structured_layer/pyramidal-cells"
+OUT_PATH: "output/archive/test_withsimple/"
+LAYER: "L5"
+TYPES: []  # can be ["L5_TPC:A", ...]
+NEURITE_TYPE: "apical_dendrite"
+
+ADD_VEC: False
+ADD_MORPH: True
+
+FEATURE_EXTRACTOR:
+#GLOBAL:
+  # - ExtractNumberLeaves
+  # - ExtractNumberBranchPoints
+  # - ExtractMaximalApicalPathLength
+  # - TotalPathLength
+  # - AverageBranchOrder
+  # - AverageRadius
+#EDGE:
+  # - ExtractDistanceWeights
+#NODE:
+  # - ExtractBranchingAngles
+  # - ExtractCoordinates
+  # - ExtractDiameters
+  # - ExtractIsBranching
+  # - ExtractIsIntermediate
+  # - ExtractIsLeaf
+  # - ExtractIsRoot
+  # - ExtractPathDistances
+  - ExtractRadialDistances
+  # - ExtractVerticalDistances
+
+CONFIG_MORPHOMETRICS: "src/configs/feature-morphometrics-test.yaml"
+NORMALIZE: true
+
+PH_F: "radial_distances"
+VECTORIZATION:
+  - persistence_image
+  # - wasserstein
+  # - bottleneck
+  # - sliced_wasserstein
+  # - landscape
+FLATTEN: false
+M_SW: 20
+K_LS: 5
+M_LS: 150

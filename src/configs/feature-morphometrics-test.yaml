@@ -1,0 +1,8 @@
+morphology:
+  total_width:
+  - mean
+neurite:
+  number_of_leaves:
+  - mean
+neurite_type:
+- APICAL_DENDRITE
