@@ -1,6 +1,7 @@
 
 ## Feature Extraction
-python run_MultiFeatureExtract.py 
+python run_MultiFeatureExtract.py \
+    src/configs/extract-multi.yaml
 
 export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
