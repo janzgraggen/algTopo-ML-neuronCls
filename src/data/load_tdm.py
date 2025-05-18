@@ -1,6 +1,7 @@
 import numpy as np
 import tmd
 import os
+import time
 from typing import Union, List, Literal
 
 from src.tda_toolbox.diagram import bottleneck_distance, wasserstein_distance, sliced_wasserstein_distance  # M for sliced, k, m for landscape
@@ -103,7 +104,7 @@ def vectorize_persistence_diagrams(
     vectorization_dict = {}
     for v_type in vectorization:
         # based on kernel density estimation (gaussian) ––––––––––––––––
-        print(f'Vectiorize PD accoringig to mode: {v_type}')
+        print(f" VEC: ({time.strftime('%H:%M:%S')}) start {v_type}-PD vectorization")
         if v_type == "persistence_image":
             xlim, ylim = tmd.analysis.get_limits(pers_diagrams)
             #-> other tdm version: xlim, ylim = tmd.vectorizations.get_limits(pers_diagrams)
@@ -128,6 +129,7 @@ def vectorize_persistence_diagrams(
                 pw_dist_mat[:, j] for j in range(len(pers_diagrams))
             ]
         vectorization_dict[v_type] = np.array(vectorized)
+        print(f" VEC: ({time.strftime('%H:%M:%S')}) done.")
     return vectorization_dict
 
 

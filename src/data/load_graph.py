@@ -17,6 +17,7 @@ import numpy as np
 from sklearn.preprocessing import RobustScaler
 import yaml
 import warnings
+import time
 
 TMD_TYPES = {
     "apical": "apical_dendrite",
@@ -142,15 +143,14 @@ class MorphologyDatasetManager:
         self.neurite_type = neurite_type
         self.orient = orient
         self.simplify = simplify
-
+        print(f"MDM: ({time.strftime('%H:%M:%S')}) start graph loading")
         filters = self._get_filters()
         ZERO_transform = self._get_ZERO_transform()
-        
+
         morphology_loader = transforms.Compose([
             ZERO_transform,
             feature_extractor,
         ])
-
         layer_datasets = [
             MorphologyDataset.from_structured_dir(
                 data_path=datapath,
@@ -169,6 +169,7 @@ class MorphologyDatasetManager:
 
         if normalize: 
             self.scale_graph()
+        print(f"MDM: ({time.strftime('%H:%M:%S')}) done.")
         
     def _get_filters(self):
         """
@@ -231,6 +232,7 @@ class MorphologyDatasetManager:
         Returns:
             MorphologyDataset: The dataset with the vectorized persistence diagrams added.      
         """
+        print(f"MDM: ({time.strftime('%H:%M:%S')}) start vectorization loading")
         neurite_collection = [data.tmd_neurites for data in self.dataset_]
         ## Use get_persistence_diagram from tmd and not get_ph_neuron (as used in load_tmd) as we suppose that we only have 1 neutrite type
 
@@ -305,7 +307,11 @@ class MorphologyDatasetManager:
                 dict[v] = torch.tensor(vec_formated.copy()).float()
         data_list_of_morphologyData = [MorphologyData.from_dict(data_list_of_dict[i]) for i  in range(len(data_list_of_dict))]
         dataset_out = MorphologyDataset(data_list_of_morphologyData)
+
+        save_transform = self.dataset_.transform ## transfer the transform from the original dataset to the new one
         self.dataset_ = dataset_out
+        self.dataset_.transform = save_transform ## transer tranform
+        print(f"MDM: ({time.strftime('%H:%M:%S')}) done.")
 
     def add_morphometrics(
         self, 
@@ -322,6 +328,7 @@ class MorphologyDatasetManager:
         Returns:
             MorphologyDataset: The dataset with morphometrics added.
         """
+        print(f"MDM: ({time.strftime('%H:%M:%S')}) start morphometrics loading")
         morphometrics_config_file = pathlib.Path(morphometrics_config_file)
         if not morphometrics_config_file.is_file():
             raise ValueError(f"Morphometrics config file not found: {morphometrics_config_file}")
@@ -352,7 +359,11 @@ class MorphologyDatasetManager:
             dict["morphometrics"] = torch.tensor(metrics_formated.copy()).float()
         data_list_of_morphologyData = [MorphologyData.from_dict(data_list_of_dict[i]) for i  in range(len(data_list_of_dict))]
         dataset_out = MorphologyDataset(data_list_of_morphologyData)
+
+        save_transform = self.dataset_.transform ## transfer the transform from the original dataset to the new one
         self.dataset_ = dataset_out
+        self.dataset_.transform = save_transform ## transer tranform
+        print(f"MDM: ({time.strftime('%H:%M:%S')}) done.")
     
     def scale_graph(
         self, 
@@ -374,8 +385,7 @@ class MorphologyDatasetManager:
                 with_centering=False,
                 )
         scaler.fit(self.dataset_)
-        self.dataset_.transform = transforms.Compose([transforms.MakeCopy(), scaler])
-
+        self.dataset_.transform = transforms.Compose([transforms.MakeCopy(), scaler])   
         # scale global features (u)
         if hasattr(self.dataset_[0], "u") and self.dataset_[0].u is not None:
             idx = list(range(self.dataset_[0].u.shape[1]))
