@@ -38,8 +38,8 @@ FLATTEN = True # flatten the image
 # sliced_wasserstein:
 M_SW = 20 # number of slices
 # landscape:
-K_LS = 10 # number of landscapes
-M_LS = 5 # resolution
+K_LS = 5 # number of landscapes
+M_LS = 150 # resolution
 
 # ------------------------ CLASSIFIER PARAMS --------------------------------
 CLS = sklearn.svm.SVC() #or other classifiers like sklearn.tree.DecisionTreeClassifier() or sklearn.discriminant_analysis.QuadraticDiscriminantAnalysis()
