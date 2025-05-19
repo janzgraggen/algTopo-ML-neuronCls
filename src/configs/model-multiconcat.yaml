@@ -4,21 +4,26 @@ model_params:
   # General: 
   n_classes: 4
   bn: False
+  dropout: 0
+  embedding_dropout: 0
   embedding_dim: 128
+  normalize_emb_weights: False
 
   # GNN:
-  edge_weight_idx: null
   flow: target_to_source
   lambda_max: 3.0
   n_node_features: 1
   normalization: sym
   pool_name: avg
 
-  # Vectorization/Morphometrics:
-  vectorizations:
+  # embeddings: Vectorization/Morphometrics/gnn:
+  embeddings:
+    - gnn
     - persistence_image
-
-n_epochs: 100
+    #- wasserstein
+    #- morphometrics
+oversampling: False
+n_epochs: 150
 optimizer_class: torch.optim.Adam
 optimizer_params:
   lr: 0.005
