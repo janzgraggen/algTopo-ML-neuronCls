@@ -12,13 +12,19 @@ class Linear1DVectorizationEmbedder(nn.Module):
     that is used to transform the input data into a higher dimensional space.
     """
 
-    def __init__(self, vectorization,embedding_dim=512):
+    def __init__(self, 
+        vectorization,
+        embedding_dim=512,
+        dropout=0.3
+        ):
         super().__init__()
         self.vectorization = vectorization
         self.embedding_dim = embedding_dim
         self.hiddeen_dim = embedding_dim // 2
-        #self.hidden = nn.Linear(n_features, 256)
+
+        self.hidden = nn.LazyLinear(self.hiddeen_dim)
         self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(p=dropout)
         self.output = nn.Linear(self.hiddeen_dim, embedding_dim)
 
     def forward(self, data):
@@ -36,9 +42,8 @@ class Linear1DVectorizationEmbedder(nn.Module):
             the tensor is (n_batch,channels=1, 512).
         """
         
-        if hasattr(data, self.vectorization):
+        if hasattr(data, self.embedding):
             x = getattr(data, self.vectorization)
-            n_features = x.shape[-1]
         else: 
             print("Attributes of data:", dir(data))
             print(self.vectorization)
@@ -50,10 +55,10 @@ class Linear1DVectorizationEmbedder(nn.Module):
         else: 
             raise ValueError(f"Expected input shape (batch, 1, size), but got {x.shape}")
         
-        self.hidden = nn.Linear(n_features, self.hiddeen_dim)
-
+        
         x = self.hidden(x)
         x = self.relu(x)
+        x = self.dropout(x)
         x = self.output(x)
         return x
 
@@ -216,53 +221,40 @@ class ManEmbedder(nn.Module):
 class MultiConcatBackbone(nn.Module):
     def __init__(self,
             embedding_dim=512,
-            ## MAN EMBEDDER     
-            n_node_features = 1, 
+            dropout=0.3,
+            n_node_features=1, 
             pool_name="avg",
             lambda_max=3.0,
             normalization="sym",
             flow="target_to_source",
-            edge_weight_idx=None,
-        
-            ## LINEAR EMBEDDER for which veqctorizations? 
-            vectorizations: list[str] = ["persistence_image"],
+            embeddings: list[str] = ["persistence_image"],
+            normalize_emb_weights: bool = True
             ):
-        
         super().__init__()
         self.n_node_features = n_node_features
-        self.vectorizations = vectorizations
+        #self.vectorizations = vectorizations
+        self.embeddings = embeddings
+        self.normalize_emb_weights = normalize_emb_weights
 
-        self.gnn_embedder = ManEmbedder(
-            embedding_dim=embedding_dim,
-            n_features=n_node_features,
-            pool_name=pool_name,
-            lambda_max=lambda_max,
-            normalization=normalization,
-            flow=flow,
-            edge_weight_idx=edge_weight_idx,)
+        # self.gnn_embedder = ManEmbedder(
+        #     embedding_dim=embedding_dim,
+        #     n_features=n_node_features,
+        #     pool_name=pool_name,
+        #     lambda_max=lambda_max,
+        #     normalization=normalization,
+        #     flow=flow,
+        #     edge_weight_idx=0)
         
-        for v in self.vectorizations:
-            if v == "persistence_image":
+        for emb in self.embeddings:
+            if emb == "gnn":
                 self.add_module(
-                    name=   v + "_embedder",
-                    module= CNNEmbedder(embedding_dim),
-                )  
+                    emb + "_embedder", 
+                    ManEmbedder(embedding_dim,n_node_features,pool_name,lambda_max,normalization,flow,edge_weight_idx=0))
+            elif emb == "persistence_image":
+                self.add_module(emb + "_embedder", CNNEmbedder(embedding_dim))
             else:
-                self.add_module(
-                    name=   v + "_embedder",
-                    module= Linear1DVectorizationEmbedder(vectorization=v),
-                )
-
-        self.gnn_weight = nn.Parameter(torch.ones([1]), requires_grad=True)
-        #self.weight_cnn = nn.Parameter(torch.ones([1]), requires_grad=True) -> is in vectorization: persistence_image
-        for v in self.vectorizations:
-            setattr(
-                self,
-                v + "_weight",
-                nn.Parameter(torch.ones([1]), requires_grad=True),
-            )
-        
-
+                self.add_module(emb + "_embedder", Linear1DVectorizationEmbedder(emb,embedding_dim,dropout))
+            setattr(self, emb + "_weight", nn.Parameter(torch.ones([1]), requires_grad=True))
 
     def forward(self, data):
         """Compute the forward pass.
@@ -279,13 +271,31 @@ class MultiConcatBackbone(nn.Module):
         log_softmax
             The log softmax of the predictions.
         """
-        #x_gnn
-        x = self.gnn_weight * self.gnn_embedder(data)
-        for vectorization in self.vectorizations:
-            x_vectorization = getattr(self, vectorization + "_embedder")(data)
-            x_vectorization = getattr(self, vectorization + "_weight") * x_vectorization
-            x= torch.cat([x, x_vectorization], dim=1)
+
+        weights = (
+            nnf.softmax(torch.stack([getattr(self, emb + "_weight") for emb in self.embeddings]).squeeze(), dim=0)
+            if self.normalize_emb_weights
+            else torch.stack([getattr(self, emb + "_weight") for emb in self.embeddings]).squeeze()
+        )
+        x_to_concat = []
+        for i, emb in enumerate(self.embeddings):
+            emb_out = self.gnn_embedder(data) if emb == "gnn" else getattr(self, emb + "_embedder")(data)
+            x_to_concat.append(weights[i] * emb_out)
+        x = torch.cat(x_to_concat, dim=1)
         return x
+    
+    def print_embedding_weights(self):
+        weights = [getattr(self, emb + "_weight") for emb in self.embeddings]
+        norm_weights = nnf.softmax(torch.stack(weights).squeeze(), dim=0)
+
+        print("\n=== Embedding Contribution Weights (Normalized) ===")
+        for emb, nw, w in zip(self.embeddings, norm_weights,weights):
+            if self.normalize_emb_weights:
+                print(f"{emb}: {nw.item():.4f}")
+            else:
+                print(f"{emb}: {w.item():.4f} ({nw.item():.2f}/1.00)")
+        print("===\n")
+
 
 class MultiConcat(nn.Module):
     """A neuron m-type classifier based on graph and image convolutions tdm-vectorizations and morphomatrics.
@@ -315,189 +325,78 @@ class MultiConcat(nn.Module):
     """
     def __init__(self,
             ## General 
-            n_classes = 4,
+            n_classes=4,
             bn=False,
+            dropout=0.4,
+            embedding_dropout=0.2,
             embedding_dim=512,
-            ## MAN EMBEDDER     
-            n_node_features = 1, 
+            ## MAN EMBEDDER
+            n_node_features=1, 
             pool_name="avg",
             lambda_max=3.0,
             normalization="sym",
             flow="target_to_source",
-            edge_weight_idx=None,
-            ## LINEAR EMBEDDER for which veqctorizations? 
-            vectorizations: list[str] = ["persistence_image"]
+            ## LINEAR EMBEDDER for which veqctorizations?
+            embeddings: list[str] = ["gnn","persistence_image"],
+            normalize_emb_weights: bool = True
         ):
-            super().__init__()
-            self.bn = bn
-            
-            self.feature_extractor = MultiConcatBackbone(
-                embedding_dim=embedding_dim,
-                ## MAN EMBEDDER     
-                n_node_features = n_node_features, 
-                pool_name=pool_name,
-                lambda_max=lambda_max,
-                normalization=normalization,
-                flow=flow,
-                edge_weight_idx=edge_weight_idx,
-                ## lin EMBEDDER
-                vectorizations= vectorizations
-                )
-            
-            n_out_features_layer = embedding_dim
-            n_out_features = (1+len(vectorizations))  * n_out_features_layer
-            if self.bn:
-                self.bn = nn.BatchNorm1d(num_features=n_out_features)
-            self.hidden = nn.Linear(in_features=n_out_features, out_features=n_out_features_layer)
-            self.classify = nn.Linear(in_features=n_out_features_layer, out_features=n_classes)
+        super().__init__()
+        self.bn = bn
+        self.dropout = nn.Dropout(p=dropout)  
+        self.training_has_printed = False  # Add flag
+
+        self.feature_extractor = MultiConcatBackbone(
+            embedding_dim=embedding_dim,
+            dropout=embedding_dropout,
+            ## MAN EMBEDDER
+            n_node_features=n_node_features, 
+            pool_name=pool_name,
+            lambda_max=lambda_max,
+            normalization=normalization,
+            flow=flow,
+            ## lin EMBEDDER
+            embeddings=embeddings,
+            normalize_emb_weights=normalize_emb_weights
+        )
+
+        n_out_features_layer = embedding_dim
+        n_out_features = len(embeddings) * n_out_features_layer
+        if self.bn:
+            self.bn = nn.BatchNorm1d(num_features=n_out_features)
+        self.hidden = nn.Linear(in_features=n_out_features, out_features=n_out_features_layer)
+        self.classify = nn.Linear(in_features=n_out_features_layer, out_features=n_classes)
+
     def forward(self, data):
-            """Compute the forward pass.
+        """Compute the forward pass.
 
-            Parameters
-            ----------
-            data : torch_geometric.data.data.Data
-                A batch of input graph data for the GNN layers.
-            images
-                A batch of input persistence images for the CNN layers.
+        Parameters
+        ----------
+        data : torch_geometric.data.data.Data
+            A batch of input graph data for the GNN layers.
+        images
+            A batch of input persistence images for the CNN layers.
 
-            Returns
-            -------
-            log_softmax
-                The log softmax of the predictions.
-            """
-            x = self.feature_extractor(data)
+        Returns
+        -------
+        log_softmax
+            The log softmax of the predictions.
+        """
+        x = self.feature_extractor(data)
 
-            if self.bn and x.shape[0]>1:
-                x = self.bn(x)
-                x = nnf.relu(x)
-            x = self.hidden(x)
+        if self.bn and x.shape[0] > 1:
+            x = self.bn(x)
             x = nnf.relu(x)
-            x = self.classify(x)
+        x = self.hidden(x)
+        x = nnf.relu(x)
+        x = self.dropout(x)   
+        x = self.classify(x)
 
-            return nnf.log_softmax(x, dim=1)
-
+        return nnf.log_softmax(x, dim=1)
+    
+    def __del__(self):
+        try:
+            if hasattr(self, "feature_extractor"):
+                self.feature_extractor.print_embedding_weights()
+        except Exception as e:
+            print(f"[Warning] Failed to print embedding weights on __del__: {e}")
             
-
-
-
-
-# class MultiConcat(nn.Module):
-#     """A neuron m-type classifier based on graph and image convolutions tdm-vectorizations and morphomatrics.
-
-#     In the feature extraction part of the network 
-#         > graph convolution layers are applied to the graph node features of the apical dendrites, 
-#         > the CNN layers are applied to the persistence image representation
-#         > the linear vectorization layers are applied to the other pd vectorizations 
-#         > linear vectorization layers are applied to the morphometrics features
-#     The resulting features are concatenated and passed
-#     through a fully-connected layer for classification.
-
-#     Parameters
-#     ----------
-#     n_node_features : int
-#         The number of input node features for the GNN layers.
-#     n_classes : int
-#         The number of output classes.
-#     image_size : int
-#         The width (or height) of the input persistence images. It is assumed
-#         that the images are square so that the width and height are equal.
-#     lin_vectorizations : list of str
-#         The list of vectorizations to be used for the linear vectorization (ATTRIBTUE NAMES)
-#     bn : bool, default False
-#         Whether or not to include a batch normalization layer between the
-#         feature extractor and the fully-connected classification layer.
-#     """
-
-#     def __init__(self,
-#             ## General 
-#             n_classes = 4,
-#             bn=False,
-#             ## MAN EMBEDDER     
-#             n_node_features = 1, 
-#             pool_name="avg",
-#             lambda_max=3.0,
-#             normalization="sym",
-#             flow="target_to_source",
-#             edge_weight_idx=None,
-#             ## CNN EMBEDDER
-#             image_size = 0, 
-
-#             ## LINEAR EMBEDDER for which veqctorizations? 
-#             vectorizations: list[str] = ["persistence_image"],
-#             ):
-        
-#         super().__init__()
-#         self.n_node_features = n_node_features
-#         self.n_classes = n_classes
-#         self.image_size = image_size
-#         self.vectorizations = vectorizations
-#         self.bn = bn
-
-#         self.gnn_embedder = ManEmbedder(
-#             n_features=n_node_features,
-#             pool_name=pool_name,
-#             lambda_max=lambda_max,
-#             normalization=normalization,
-#             flow=flow,
-#             edge_weight_idx=edge_weight_idx,)
-        
-#         for v in self.vectorizations:
-#             if v == "persistence_image":
-#                 self.add_module(
-#                     name=   v + "_embedder",
-#                     module= CNNEmbedder(),
-#                 )  
-#             else:
-#                 self.add_module(
-#                     name=   v + "_embedder",
-#                     module= Linear1DVectorizationEmbedder(vectorization=v),
-#                 )
-
-#         self.weight_gnn = nn.Parameter(torch.ones([1]), requires_grad=True)
-#         #self.weight_cnn = nn.Parameter(torch.ones([1]), requires_grad=True) -> is in vectorization: persistence_image
-#         for v in self.vectorizations:
-#             setattr(
-#                 self,
-#                 v + "_weight",
-#                 nn.Parameter(torch.ones([1]), requires_grad=True),
-#             )
-        
-#         n_out_features_layer = 512
-#         n_out_features = (1+len(self.vectorizations))  * n_out_features_layer
-#         if self.bn:
-#             self.bn = nn.BatchNorm1d(num_features=n_out_features)
-#         self.hidden = nn.Linear(in_features=n_out_features, out_features=n_out_features_layer)
-#         self.classify = nn.Linear(in_features=n_out_features_layer, out_features=self.n_classes)
-
-#     def forward(self, data):
-#         """Compute the forward pass.
-
-#         Parameters
-#         ----------
-#         data : torch_geometric.data.data.Data
-#             A batch of input graph data for the GNN layers.
-#         images
-#             A batch of input persistence images for the CNN layers.
-
-#         Returns
-#         -------
-#         log_softmax
-#             The log softmax of the predictions.
-#         """
-#         #x_gnn
-#         x = self.weight_gnn * self.gnn_embedder(data)
-#         for vectorization in self.vectorizations:
-#             x_vectorization = getattr(self, vectorization + "_embedder")(data)
-#             x_vectorization = getattr(self, vectorization + "_weight") * x_vectorization
-#             x= torch.cat([x, x_vectorization], dim=1)
-
-#         self.feature_extractor = x
-
-#         if self.bn:
-#             x = self.bn(x)
-#             x = nnf.relu(x)
-#         x = self.hidden(x)
-#         x = nnf.relu(x)
-#         x = self.classify(x)
-
-#         return nnf.log_softmax(x, dim=1)
