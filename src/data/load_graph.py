@@ -136,8 +136,7 @@ class MorphologyDatasetManager:
         feature_extractor: transforms.Compose =
             transforms.Compose([
                 transforms.ExtractRadialDistances()
-            ]),
-        normalize: bool = True, 
+            ])
         ):
         self.types = types
         self.neurite_type = neurite_type
@@ -166,9 +165,6 @@ class MorphologyDatasetManager:
         morpho_dataset = morpho_dataset.index_select(idx_keep)
         
         self.dataset_ = morpho_dataset
-
-        if normalize: 
-            self.scale_graph()
         print(f"MDM: ({time.strftime('%H:%M:%S')}) done.")
         
     def _get_filters(self):
@@ -307,10 +303,7 @@ class MorphologyDatasetManager:
                 dict[v] = torch.tensor(vec_formated.copy()).float()
         data_list_of_morphologyData = [MorphologyData.from_dict(data_list_of_dict[i]) for i  in range(len(data_list_of_dict))]
         dataset_out = MorphologyDataset(data_list_of_morphologyData)
-
-        save_transform = self.dataset_.transform ## transfer the transform from the original dataset to the new one
         self.dataset_ = dataset_out
-        self.dataset_.transform = save_transform ## transer tranform
         print(f"MDM: ({time.strftime('%H:%M:%S')}) done.")
 
     def add_morphometrics(
@@ -359,10 +352,7 @@ class MorphologyDatasetManager:
             dict["morphometrics"] = torch.tensor(metrics_formated.copy()).float()
         data_list_of_morphologyData = [MorphologyData.from_dict(data_list_of_dict[i]) for i  in range(len(data_list_of_dict))]
         dataset_out = MorphologyDataset(data_list_of_morphologyData)
-
-        save_transform = self.dataset_.transform ## transfer the transform from the original dataset to the new one
         self.dataset_ = dataset_out
-        self.dataset_.transform = save_transform ## transer tranform
         print(f"MDM: ({time.strftime('%H:%M:%S')}) done.")
     
     def scale_graph(
@@ -435,7 +425,7 @@ class MorphologyDatasetManager:
         keep_fields = [
             "edge_index", "edge_attr","u",
             "x", "y","y_str", "label", "z",
-            "diagram","image","landscape" ,"bottleneck","wasserstein","sliced_wasserstein",
+            "diagram","persistence_image","landscape" ,"bottleneck","wasserstein","sliced_wasserstein",
             "morphometrics",
             "path","tmd_neurites","__num_nodes__" # set by data.num_nodes = <value>]
             ]

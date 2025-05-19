@@ -18,8 +18,7 @@ mdm = MorphologyDatasetManager(
     layer=CFG.LAYER,
     types=CFG.TYPES,
     neurite_type=CFG.NEURITE_TYPE,
-    feature_extractor=CFG.FEATURE_EXTRACTOR,
-    normalize=CFG.NORMALIZE
+    feature_extractor=CFG.FEATURE_EXTRACTOR
     )
 if CFG.ADD_VEC:
     mdm.add_vecotized_pd(
@@ -36,6 +35,9 @@ if CFG.ADD_MORPH:
         morphometrics_config_file=CFG.CONFIG_MORPHOMETRICS,
         normalize=CFG.NORMALIZE
         )
+if CFG.NORMALIZE:
+    mdm.scale_graph() ## scale graph features -> need to do this after vec/morpho extraction 
+
 mdm.write_features(
     output_dir=CFG.OUT_PATH,
     force=True,
