@@ -3,7 +3,7 @@
 # Check for two arguments
 if [ "$#" -ne 1 ]; then
   echo "Usage: $0 <configname>"
-  echo "Example: $0 extract-multi"
+  echo "Example: $0 configname (only name not path, no .yaml)"
   exit 1
 fi
 

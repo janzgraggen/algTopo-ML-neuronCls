@@ -3,7 +3,7 @@
 # Check for two arguments
 if [ "$#" -ne 2 ]; then
   echo "Usage: $0 <features_dir_name> <results_dir_name>"
-  echo "Example: $0 features:kanari18_laylab features:kanari18_laylab_results"
+  echo "Example: $0 features_dir_name   results_dir_name (only name not path)"
   exit 1
 fi
 
