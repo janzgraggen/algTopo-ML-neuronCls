@@ -6,7 +6,7 @@ model_params:
   bn: False
   dropout: 0
   embedding_dropout: 0
-  embedding_dim: 128
+  embedding_dim: 16
   normalize_emb_weights: False
 
   # GNN:
@@ -19,11 +19,16 @@ model_params:
   # embeddings: Vectorization/Morphometrics/gnn:
   embeddings:
     - gnn
-    - persistence_image
-    #- wasserstein
-    #- morphometrics
+
+    #- persistence_image
+    - wasserstein
+    - bottleneck
+    - sliced_wasserstein
+    - landscape
+
+    - morphometrics
 oversampling: False
-n_epochs: 150
+n_epochs: 30
 optimizer_class: torch.optim.Adam
 optimizer_params:
-  lr: 0.005
+  lr: 0.0001

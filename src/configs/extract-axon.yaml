@@ -1,11 +1,11 @@
 PATH: "assets/datasets_structured_layer/kanari18_laylab"
-OUT_PATH: "output/features/pi_only/"
+OUT_PATH: "output/features/k18_axon/"
 LAYER: "L5"
 TYPES: ["L5_TPC:A","L5_TPC:B","L5_TPC:C","L5_UPC"]
-NEURITE_TYPE: "apical_dendrite"
+NEURITE_TYPE: "axon"
 
 ADD_VEC: True
-ADD_MORPH: false
+ADD_MORPH: True
 
 FEATURE_EXTRACTOR:
 #GLOBAL:
@@ -29,16 +29,16 @@ FEATURE_EXTRACTOR:
   - ExtractRadialDistances
   # - ExtractVerticalDistances
 
-CONFIG_MORPHOMETRICS: "src/configs/feature-morphometrics.yaml"
+CONFIG_MORPHOMETRICS: "src/configs/feature-morphometrics-axon.yaml"
 NORMALIZE: true
 
 PH_F: "radial_distances"
 VECTORIZATION:
   - persistence_image
-  # - wasserstein
-  # - bottleneck
-  # - sliced_wasserstein
-  # - landscape
+  - wasserstein
+  - bottleneck
+  - sliced_wasserstein
+  - landscape
 FLATTEN: false
 M_SW: 20
 K_LS: 5

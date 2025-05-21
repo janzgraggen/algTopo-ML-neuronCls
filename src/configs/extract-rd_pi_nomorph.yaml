@@ -1,11 +1,11 @@
 PATH: "assets/datasets_structured_layer/kanari18_laylab"
-OUT_PATH: "output/features/k18_reproduce_bugfix/"
+OUT_PATH: "output/features/pi_only/"
 LAYER: "L5"
 TYPES: ["L5_TPC:A","L5_TPC:B","L5_TPC:C","L5_UPC"]
 NEURITE_TYPE: "apical_dendrite"
 
 ADD_VEC: True
-ADD_MORPH: True
+ADD_MORPH: false
 
 FEATURE_EXTRACTOR:
 #GLOBAL:
@@ -35,11 +35,11 @@ NORMALIZE: true
 PH_F: "radial_distances"
 VECTORIZATION:
   - persistence_image
-  - wasserstein
-  - bottleneck
-  - sliced_wasserstein
-  - landscape
+  # - wasserstein
+  # - bottleneck
+  # - sliced_wasserstein
+  # - landscape
 FLATTEN: false
 M_SW: 20
-K_LS: 10
-M_LS: 5
+K_LS: 5
+M_LS: 150
