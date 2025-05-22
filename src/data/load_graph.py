@@ -407,6 +407,12 @@ class MorphologyDatasetManager:
         instance.dataset_ = cls._load_features(features_dir)
         return instance
     
+    @classmethod
+    def from_dataset(cls, dataset: MorphologyDataset):
+        instance = cls.__new__(cls)
+        instance.dataset_ = dataset
+        return instance
+    
     @property
     def dataset(self):
         return self.dataset_
@@ -445,13 +451,15 @@ class MorphologyDatasetManager:
         Returns:
             None
         """
+        if len(self.dataset_) == 0:
+            raise ValueError("Dataset is empty — check input directories or creation.")
         if hasattr(self.dataset_[0], "morphology"):
             self.remove_morphology_field()
             if hasattr(self.dataset_[0], "morphology"):
                 raise ValueError("Morphology field not removed")
+        output_dir = pathlib.Path(output_dir)       
         if not force and output_dir.is_dir():
             raise ValueError(f"Output directory already exists: {output_dir}")
-        output_dir = pathlib.Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         for i, sample in enumerate(self.dataset_):
             # if i ==0: 

@@ -1,4 +1,5 @@
 from src.data.load_graph import MorphologyDatasetManager
+from src.utils.multi_neutrite_attribute import MultiNeutriteAttribute
 from morphoclass.data import MorphologyDataset
 from morphoclass.data.morphology_data import MorphologyData
 import numpy as np
@@ -25,11 +26,6 @@ def parser():
     NEUTRITE_CONCAT_DIR = "output/features/" + args.out
     print(f"NEX: ({time.strftime('%H:%M:%S')}) Done.")
     return AXON_DIR, APICAL_DIR, BASAL_DIR, NEUTRITE_CONCAT_DIR
-class MultiNeutriteAttribute:
-    def __init__(self, attr_axon=None, attr_apical=None, attr_basal=None):
-        self.axon = attr_axon
-        self.apical = attr_apical
-        self.basal = attr_basal
 
 def create_neurite_concat_dataset(path_axon, path_apical, path_basal,path_out):
         # Load the datasets
