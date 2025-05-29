@@ -2,11 +2,7 @@ import numpy as np
 from sklearn.metrics import f1_score, accuracy_score
 from sklearn.model_selection import cross_validate ,GridSearchCV, StratifiedKFold
 from sklearn.svm import SVC
-from collections.abc import Iterable
 from typing import Union
-from sklearn.model_selection import BaseCrossValidator
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
-
 
 def train_sklearn_classifier(labels,pers_image, sk_clf, train_test_ratio):
     """
