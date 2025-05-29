@@ -7,7 +7,9 @@ model_params:
   dropout: 0
   embedding_dropout: 0
   embedding_dim: 32
+  linear_hidden_dim: 16
   normalize_emb_weights: False
+  normalize_emb_temp: 1
 
   # GNN:
   flow: target_to_source

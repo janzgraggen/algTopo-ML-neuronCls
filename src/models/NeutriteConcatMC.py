@@ -43,7 +43,7 @@ class NeutriteConcatBackbone(nn.Module):
                     OPT_neutrite=n_type
                 )    
             )
-            setattr(self, n_type + "_weight", nn.Parameter(torch.ones([1]), requires_grad=True))
+            
 
     def forward(self, data):
         """Compute the forward pass.

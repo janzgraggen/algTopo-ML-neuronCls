@@ -7,7 +7,8 @@ model_params:
   dropout: 0
   embedding_dropout: 0
   embedding_dim: 32
-  normalize_emb_weights: False
+  normalize_emb_weights: True
+  normalize_emb_temp: 0.1
 
   # GNN:
   flow: target_to_source
@@ -30,7 +31,7 @@ model_params:
     - axon 
     - apical
 oversampling: False
-n_epochs: 100
+n_epochs: 50
 optimizer_class: torch.optim.Adam
 optimizer_params:
   lr: 0.001

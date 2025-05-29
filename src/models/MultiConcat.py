@@ -17,6 +17,7 @@ class Linear1DVectorizationEmbedder(nn.Module):
     def __init__(self, 
         vectorization,
         embedding_dim=512,
+        hidden_dim=256,
         dropout=0.3, 
         OPT_neutrite: Literal["axon","apical","basal"] = None, ## for neutrite-type specific attributes of type MultiNeutriteAttribute
         ):
@@ -24,12 +25,12 @@ class Linear1DVectorizationEmbedder(nn.Module):
         self.OPT_neutrite = OPT_neutrite
         self.vectorization = vectorization
         self.embedding_dim = embedding_dim
-        self.hiddeen_dim = embedding_dim // 2
+        self.hidden_dim = hidden_dim
 
-        self.hidden = nn.LazyLinear(self.hiddeen_dim)
+        self.hidden = nn.LazyLinear(self.hidden_dim)
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(p=dropout)
-        self.output = nn.Linear(self.hiddeen_dim, embedding_dim)
+        self.output = nn.Linear(self.hidden_dim, embedding_dim)
 
     def forward(self, data):
         """Do the forward pass.
@@ -48,8 +49,11 @@ class Linear1DVectorizationEmbedder(nn.Module):
         
         if hasattr(data, self.vectorization):
             x = getattr(data, self.vectorization)
-            if type(x) == MultiNeutriteAttribute:  ##for neutrite specific attributes
-                x = getattr(x, self.neutriteOPT)
+            ## VARIANT A: (not yet supported) 
+            # if type(x) == MultiNeutriteAttribute:  ##for neutrite specific attributes
+            #     x = getattr(x, self.neutriteOPT)
+        elif hasattr(data, self.vectorization+"_"+ self.neutriteOPT):
+                x= getattr(data, self.vectorization+"_"+ self.neutriteOPT)
         else: 
             print("Attributes of data:", dir(data))
             print(self.vectorization)
@@ -103,8 +107,11 @@ class CNNEmbedder(nn.Module):
         
         if hasattr(data, "persistence_image"):
             x = data.persistence_image
-            if type(x) == MultiNeutriteAttribute:  ##for neutrite specific attributes
-                x = getattr(x, self.neutriteOPT)
+            ## VARIANT A: (not yet supported) 
+            # if type(x) == MultiNeutriteAttribute:  ##for neutrite specific attributes
+            #     x = getattr(x, self.neutriteOPT)
+        elif hasattr(data, "persistence_image_"+ self.OPT_neutrite):
+                x= getattr(data, "persistence_image_"+ self.OPT_neutrite)
         else: return ValueError("The input data does not have a persistence image.")
 
         x = self.conv1(x)
@@ -213,17 +220,24 @@ class ManEmbedder(nn.Module):
             x = data.x
             edge_index = data.edge_index
             edge_attr = data.edge_attr
-            if type(x) == MultiNeutriteAttribute:  ##for neutrite specific attributes
-                x = getattr(x, self.OPT_neutrite)
-                assert type(edge_index) == MultiNeutriteAttribute
-                edge_index = getattr(edge_index, self.OPT_neutrite)
-                assert type(edge_attr) == MultiNeutriteAttribute
-                edge_attr = getattr(edge_attr, self.OPT_neutrite)
-            batch = data.batch
+            # # VARIANT A: (not yet supported)
+            # if type(x) == MultiNeutriteAttribute:  ##for neutrite specific attributes
+            #     x = getattr(x, self.OPT_neutrite)
+            #     assert type(edge_index) == MultiNeutriteAttribute
+            #     edge_index = getattr(edge_index, self.OPT_neutrite)
+            #     assert type(edge_attr) == MultiNeutriteAttribute
+            #     edge_attr = getattr(edge_attr, self.OPT_neutrite)
+            # # VARIANT B: 
+            
+        elif getattr(data, "x_" + self.OPT_neutrite):
+            x = getattr(data, "x_" + self.OPT_neutrite)
+            edge_index = getattr(data, "edge_index_" + self.OPT_neutrite)
+            edge_attr = getattr(data, "edge_attr_" + self.OPT_neutrite)
 
+        batch = data.batch
         edge_weight = None
         if edge_attr is not None and self.edge_weight_idx is not None:
-            edge_weight = edge_attr[:, self.edge_weight_idx]
+             edge_weight = edge_attr[:, self.edge_weight_idx]
 
         x = self.bi1(x, edge_index, edge_weight=edge_weight)
         x = self.relu(x)
@@ -237,6 +251,7 @@ class ManEmbedder(nn.Module):
 class MultiConcatBackbone(nn.Module):
     def __init__(self,
             embedding_dim=512,
+            linear_hidden_dim=256,
             dropout=0.3,
             n_node_features=1, 
             pool_name="avg",
@@ -245,13 +260,14 @@ class MultiConcatBackbone(nn.Module):
             flow="target_to_source",
             embeddings: list[str] = ["persistence_image"],
             normalize_emb_weights: bool = True,
+            normalize_emb_temp: float = 1.0,
             OPT_neutrite: Literal["axon","apical","basal"]  = None ## for neutrite-type specific attributes of type MultiNeutriteAttribute
             ):
         super().__init__()
         self.n_node_features = n_node_features
-        #self.vectorizations = vectorizations
         self.embeddings = embeddings
         self.normalize_emb_weights = normalize_emb_weights
+        self.normalize_emb_temp = normalize_emb_temp
         
         for emb in self.embeddings:
             if emb == "gnn":
@@ -261,8 +277,8 @@ class MultiConcatBackbone(nn.Module):
             elif emb == "persistence_image":
                 self.add_module(emb + "_embedder", CNNEmbedder(embedding_dim,OPT_neutrite))
             else:
-                self.add_module(emb + "_embedder", Linear1DVectorizationEmbedder(emb,embedding_dim,dropout,OPT_neutrite))
-            setattr(self, emb + "_weight", nn.Parameter(torch.ones([1]), requires_grad=True))
+                self.add_module(emb + "_embedder", Linear1DVectorizationEmbedder(emb,embedding_dim,linear_hidden_dim,dropout,OPT_neutrite))
+            setattr(self, emb + "_weight", nn.Parameter(torch.randn(1) * 0.1+1, requires_grad=True))
 
     def forward(self, data):
         """Compute the forward pass.
@@ -279,12 +295,9 @@ class MultiConcatBackbone(nn.Module):
         log_softmax
             The log softmax of the predictions.
         """
+        raw_weights = torch.stack([getattr(self, emb + "_weight") for emb in self.embeddings]).squeeze()
+        weights = nnf.softmax(raw_weights/self.normalize_emb_temp, dim=0) if self.normalize_emb_weights else raw_weights
 
-        weights = (
-            nnf.softmax(torch.stack([getattr(self, emb + "_weight") for emb in self.embeddings]).squeeze(), dim=0)
-            if self.normalize_emb_weights
-            else torch.stack([getattr(self, emb + "_weight") for emb in self.embeddings]).squeeze()
-        )
         x_to_concat = []
         for i, emb in enumerate(self.embeddings):
             emb_out = self.gnn_embedder(data) if emb == "gnn" else getattr(self, emb + "_embedder")(data)
@@ -294,12 +307,15 @@ class MultiConcatBackbone(nn.Module):
     
     def print_embedding_weights(self):
         weights = [getattr(self, emb + "_weight") for emb in self.embeddings]
-        norm_weights = nnf.softmax(torch.stack(weights).squeeze(), dim=0)
+        if self.normalize_emb_weights:
+            norm_weights = weights
+        else:
+            norm_weights = nnf.softmax(torch.stack(weights).squeeze(), dim=0)
 
         print("\n=== Embedding Contribution Weights (Normalized) ===")
         for emb, nw, w in zip(self.embeddings, norm_weights,weights):
             if self.normalize_emb_weights:
-                print(f"{emb}: {nw.item():.4f}")
+                print(f"{emb}: {w.item():.4f} ({nw.item():.2f}/1.00)")
             else:
                 print(f"{emb}: {w.item():.4f} ({nw.item():.2f}/1.00)")
         print("===\n")
@@ -338,6 +354,7 @@ class MultiConcat(nn.Module):
             dropout=0.4,
             embedding_dropout=0.2,
             embedding_dim=512,
+            linear_hidden_dim=256,
             ## MAN EMBEDDER
             n_node_features=1, 
             pool_name="avg",
@@ -346,7 +363,8 @@ class MultiConcat(nn.Module):
             flow="target_to_source",
             ## LINEAR EMBEDDER for which veqctorizations?
             embeddings: list[str] = ["gnn","persistence_image"],
-            normalize_emb_weights: bool = True
+            normalize_emb_weights: bool = True,
+            normalize_emb_temp: float = 1.0
         ):
         super().__init__()
         self.bn = bn
@@ -354,6 +372,7 @@ class MultiConcat(nn.Module):
 
         self.feature_extractor = MultiConcatBackbone(
             embedding_dim=embedding_dim,
+            linear_hidden_dim=linear_hidden_dim,
             dropout=embedding_dropout,
             ## MAN EMBEDDER
             n_node_features=n_node_features, 
@@ -363,7 +382,8 @@ class MultiConcat(nn.Module):
             flow=flow,
             ## lin EMBEDDER
             embeddings=embeddings,
-            normalize_emb_weights=normalize_emb_weights
+            normalize_emb_weights=normalize_emb_weights,
+            normalize_emb_temp=normalize_emb_temp
         )
 
         n_out_features_layer = embedding_dim
