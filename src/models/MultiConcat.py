@@ -7,7 +7,7 @@ from morphoclass import layers
 from src.utils.multi_neutrite_attribute import MultiNeutriteAttribute
 from typing import Literal
 
-class Linear1DVectorizationEmbedder(nn.Module):
+class LinearEmbedder(nn.Module):
     """The embedder part of the `MultiConcat` classifier.
 
     This is a simple linear layer with one hidden layer and ReLU activation
@@ -125,7 +125,7 @@ class CNNEmbedder(nn.Module):
 
         return x
 
-class ManEmbedder(nn.Module):
+class GraphEmbedder(nn.Module):
     """The embedder for the `ManNet` network.
 
     The embedder consists of two bidirectional ChebConv blocks followed
@@ -162,6 +162,7 @@ class ManEmbedder(nn.Module):
     def __init__(
         self,
         embedding_dim=512,
+        cheb_conv_hidden_dim=128,
         n_features=1,
         pool_name="avg",
         lambda_max=3.0,
@@ -187,8 +188,8 @@ class ManEmbedder(nn.Module):
             "lambda_max": self.lambda_max,
         }
 
-        self.bi1 = layers.BidirectionalBlock(n_features, 128, **conv_kwargs)
-        self.bi2 = layers.BidirectionalBlock(128, embedding_dim, **conv_kwargs)
+        self.bi1 = layers.BidirectionalBlock(n_features, cheb_conv_hidden_dim, **conv_kwargs)
+        self.bi2 = layers.BidirectionalBlock(cheb_conv_hidden_dim, embedding_dim, **conv_kwargs)
         self.relu = nn.ReLU()
 
         if pool_name == "avg":
@@ -252,6 +253,7 @@ class MultiConcatBackbone(nn.Module):
     def __init__(self,
             embedding_dim=512,
             linear_hidden_dim=256,
+            cheb_conv_hidden_dim=128,
             dropout=0.3,
             n_node_features=1, 
             pool_name="avg",
@@ -273,11 +275,11 @@ class MultiConcatBackbone(nn.Module):
             if emb == "gnn":
                 self.add_module(
                     emb + "_embedder", 
-                    ManEmbedder(embedding_dim,n_node_features,pool_name,lambda_max,normalization,flow,edge_weight_idx=0,OPT_neutrite=OPT_neutrite))
+                    GraphEmbedder(embedding_dim,cheb_conv_hidden_dim,n_node_features,pool_name,lambda_max,normalization,flow,edge_weight_idx=0,OPT_neutrite=OPT_neutrite))
             elif emb == "persistence_image":
                 self.add_module(emb + "_embedder", CNNEmbedder(embedding_dim,OPT_neutrite))
             else:
-                self.add_module(emb + "_embedder", Linear1DVectorizationEmbedder(emb,embedding_dim,linear_hidden_dim,dropout,OPT_neutrite))
+                self.add_module(emb + "_embedder", LinearEmbedder(emb,embedding_dim,linear_hidden_dim,dropout,OPT_neutrite))
             setattr(self, emb + "_weight", nn.Parameter(torch.randn(1) * 0.1+1, requires_grad=True))
 
     def forward(self, data):
@@ -295,12 +297,15 @@ class MultiConcatBackbone(nn.Module):
         log_softmax
             The log softmax of the predictions.
         """
+        if len(self.embeddings) == 1:
+            x = getattr(self, self.embeddings[0] + "_embedder")(data)
+            return x
         raw_weights = torch.stack([getattr(self, emb + "_weight") for emb in self.embeddings]).squeeze()
         weights = nnf.softmax(raw_weights/self.normalize_emb_temp, dim=0) if self.normalize_emb_weights else raw_weights
 
         x_to_concat = []
         for i, emb in enumerate(self.embeddings):
-            emb_out = self.gnn_embedder(data) if emb == "gnn" else getattr(self, emb + "_embedder")(data)
+            emb_out = getattr(self, emb + "_embedder")(data)
             x_to_concat.append(weights[i] * emb_out)
         x = torch.cat(x_to_concat, dim=1)
         return x
@@ -354,7 +359,9 @@ class MultiConcat(nn.Module):
             dropout=0.4,
             embedding_dropout=0.2,
             embedding_dim=512,
+            cls_hidden_dim=512,
             linear_hidden_dim=256,
+            cheb_conv_hidden_dim=128,
             ## MAN EMBEDDER
             n_node_features=1, 
             pool_name="avg",
@@ -373,6 +380,7 @@ class MultiConcat(nn.Module):
         self.feature_extractor = MultiConcatBackbone(
             embedding_dim=embedding_dim,
             linear_hidden_dim=linear_hidden_dim,
+            cheb_conv_hidden_dim=cheb_conv_hidden_dim,
             dropout=embedding_dropout,
             ## MAN EMBEDDER
             n_node_features=n_node_features, 
@@ -386,12 +394,12 @@ class MultiConcat(nn.Module):
             normalize_emb_temp=normalize_emb_temp
         )
 
-        n_out_features_layer = embedding_dim
-        n_out_features = len(embeddings) * n_out_features_layer
+        self.embeddings = embeddings
+        n_out_features = len(embeddings) * embedding_dim
         if self.bn:
             self.bn = nn.BatchNorm1d(num_features=n_out_features)
-        self.hidden = nn.Linear(in_features=n_out_features, out_features=n_out_features_layer)
-        self.classify = nn.Linear(in_features=n_out_features_layer, out_features=n_classes)
+        self.hidden = nn.Linear(in_features=n_out_features, out_features=cls_hidden_dim)
+        self.classify = nn.Linear(in_features=cls_hidden_dim, out_features=n_classes)
 
     def forward(self, data):
         """Compute the forward pass.
@@ -422,7 +430,7 @@ class MultiConcat(nn.Module):
     
     def __del__(self):
         try:
-            if hasattr(self, "feature_extractor"):
+            if hasattr(self, "feature_extractor") and len(self.embeddings) > 1:
                 self.feature_extractor.print_embedding_weights()
         except Exception as e:
             print(f"[Warning] Failed to print embedding weights on __del__: {e}")
