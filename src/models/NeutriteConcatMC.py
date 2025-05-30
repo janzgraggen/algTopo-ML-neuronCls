@@ -10,7 +10,6 @@ class NeutriteConcatBackbone(nn.Module):
     def __init__(self,
             embedding_dim=512,
             dropout=0.3,
-            embedding_dropout = 0.1,
             n_node_features=1, 
             pool_name="avg",
             lambda_max=3.0,
@@ -18,11 +17,13 @@ class NeutriteConcatBackbone(nn.Module):
             flow="target_to_source",
             embeddings: list[str] = ["persistence_image"],
             normalize_emb_weights: bool = True,
+            normalize_emb_temp: float = 0.1,
             ntype_list: List[Literal["axon","apical","basal"]]  =["axon","apical"] ## for neutrite-type specific attributes of type MultiNeutriteAttribute
             ):
         super().__init__()
         self.ntype_list = ntype_list
         self.normalize_emb_weights = normalize_emb_weights
+        self.normalize_emb_temp = normalize_emb_temp
         
 
         for n_type in self.ntype_list:
@@ -30,7 +31,7 @@ class NeutriteConcatBackbone(nn.Module):
                 n_type + "_embedder",
                 MultiConcatBackbone(
                     embedding_dim=embedding_dim,
-                    dropout=embedding_dropout,
+                    dropout=dropout,
                     ## MAN EMBEDDER
                     n_node_features=n_node_features, 
                     pool_name=pool_name,
@@ -43,7 +44,7 @@ class NeutriteConcatBackbone(nn.Module):
                     OPT_neutrite=n_type
                 )    
             )
-            
+            setattr(self, n_type + "_weight", nn.Parameter(torch.ones([1]), requires_grad=True))
 
     def forward(self, data):
         """Compute the forward pass.
@@ -60,12 +61,8 @@ class NeutriteConcatBackbone(nn.Module):
         log_softmax
             The log softmax of the predictions.
         """
-
-        weights = (
-            nnf.softmax(torch.stack([getattr(self, n_type + "_weight") for n_type in self.ntype_list]).squeeze(), dim=0)
-            if self.normalize_emb_weights
-            else torch.stack([getattr(self, n_type + "_weight") for n_type in self.ntype_list]).squeeze()
-        )
+        raw_weights = torch.stack([getattr(self, n_type + "_weight") for n_type in self.ntype_list]).squeeze()
+        weights = nnf.softmax(raw_weights/self.normalize_emb_temp, dim=0) if self.normalize_emb_weights else raw_weights
         x_to_concat = []
         for i, n_type in enumerate(self.ntype_list):
             n_type_emb =  getattr(self, n_type + "_embedder")(data)
@@ -76,11 +73,11 @@ class NeutriteConcatBackbone(nn.Module):
     def print_ntype_weights(self):
         weights = [getattr(self, n_type + "_weight") for n_type in self.ntype_list]
         norm_weights = nnf.softmax(torch.stack(weights).squeeze(), dim=0)
-
+ 
         print("\n=== Embedding Contribution Weights (Normalized) ===")
         for n_type, nw, w in zip(self.ntype_list, norm_weights,weights):
             if self.normalize_emb_weights:
-                print(f"{n_type}: {nw.item():.4f}")
+                print(f"{n_type}: {w.item():.4f} ({nw.item():.2f}/1.00)")
             else:
                 print(f"{n_type}: {w.item():.4f} ({nw.item():.2f}/1.00)")
         print("===\n")
@@ -130,6 +127,7 @@ class NeutriteConcatMC(nn.Module):
             ## LINEAR EMBEDDER for which veqctorizations?
             embeddings: list[str] = ["gnn","persistence_image"],
             normalize_emb_weights: bool = True,
+            normalize_emb_temp: float = 0.1,
             ntype_list: List[Literal["axon","apical", "basal"]]= ["axon","apical"]
         ):
         super().__init__()
@@ -138,8 +136,7 @@ class NeutriteConcatMC(nn.Module):
 
         self.feature_extractor =  NeutriteConcatBackbone(
             embedding_dim=embedding_dim,
-            dropout=dropout,
-            embedding_dropout= embedding_dropout,
+            dropout= embedding_dropout,
             n_node_features=n_node_features,
             pool_name=pool_name,
             lambda_max=lambda_max,
@@ -147,6 +144,7 @@ class NeutriteConcatMC(nn.Module):
             flow=flow,
             embeddings= embeddings,
             normalize_emb_weights = normalize_emb_weights,
+            normalize_emb_temp = normalize_emb_temp,
             ntype_list= ntype_list ## for neutrite-type specific attributes of type MultiNeutriteAttribute
             )
 
