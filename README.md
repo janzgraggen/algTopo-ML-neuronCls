@@ -97,7 +97,7 @@ assets/datasets_structured_layer/Layer/Label/file
 
 ### Configuration
 
-Update the following parameters in `run_TrainTdmML.py`:
+Update the following parameters in `TrainTraditional.py`:
 
 ```python
 DATAPATH = "Data/"
@@ -114,6 +114,11 @@ CV = sklearn.model_selection.StratifiedKFold(**args**)
 GRID = sklearn.model_selection.GridSearchCV( **args**)
 ```
 
+Run the script with
+
+```
+./runT.sh
+```
 ---
 
 ### Loading and Training
@@ -166,6 +171,17 @@ morphoclass evaluate performance model.chk output/report.html
 ---
 
 ### 2.2 Creating and Training with Multimodal Data
+
+Run the shell wrapers: 
+```
+./runE.sh configname
+```
+to extract features and 
+```
+./runMC.sh features_dir_name   results_dir_name
+```
+to train and evaluate. 
+functionality is explained in the following sections.
 
 #### 2.2.1 Feature Extraction (Custom)
 
