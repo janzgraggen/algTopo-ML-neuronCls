@@ -1,4 +1,4 @@
-PATH: "assets/datasets_structured_layer/kanari18_laylab"
+PATH: "assets/datasets_structured_layer/janelia"
 OUT_PATH: "output/features/janelia/"
 LAYER: "L5"
 TYPES: ""

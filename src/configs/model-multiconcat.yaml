@@ -7,7 +7,9 @@ model_params:
   dropout: 0
   embedding_dropout: 0
   embedding_dim: 32
+  cls_hidden_dim: 128
   linear_hidden_dim: 16
+  cheb_conv_hidden_dim: 128
   normalize_emb_weights: False
   normalize_emb_temp: 1
 
@@ -25,8 +27,7 @@ model_params:
     - wasserstein
     - bottleneck
     - sliced_wasserstein
-    - landscape
-
+    - landscape    
     - morphometrics
 oversampling: False
 n_epochs: 20
