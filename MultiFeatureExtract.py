@@ -3,7 +3,7 @@ from src.configs.confighandler import Config
 import sys
 
 if len(sys.argv) != 2:
-    print("!!! Usage: python run_MultiFeatureExtract.py <config_path>")
+    print("!!! Usage: python MultiFeatureExtract.py <config_path>")
     print("-> proceed with default config: src/configs/extract-simple.yaml")
     CFG_PATH = "src/configs/extract-simple.yaml"
 else:

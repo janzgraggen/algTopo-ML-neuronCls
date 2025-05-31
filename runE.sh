@@ -10,7 +10,7 @@ fi
 CONFIG_DIR="src/configs/$1.yaml"
 
 # Run Extraction
-python run_MultiFeatureExtract.py \
+python MultiFeatureExtract.py \
     "$CONFIG_DIR"
 
 

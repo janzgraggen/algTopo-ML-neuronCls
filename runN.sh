@@ -8,4 +8,4 @@ if [ "$#" -lt 3 ]; then
 fi
 
 # Run the Python script with the provided arguments
-python run_NeutriteFeatureConcat.py "$@"
+python NeutriteFeatureConcat.py "$@"
