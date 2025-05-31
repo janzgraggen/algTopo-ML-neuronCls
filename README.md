@@ -93,7 +93,7 @@ reproducing results from  [Kanari et al. (2019)](https://academic.oup.com/cercor
 Update the GLOBAL  parameters in `TrainTraditional.py`
 
 <details>
-<summary>CONFIG EXAMPLE (Click to expant)</summary>
+<summary>CONFIG EXAMPLE (Click to expand)</summary>
 
 ```bash
     DATAPATH = "Data/" 
@@ -152,7 +152,7 @@ Examples for accepded values can be found e.g in `src/configs/extract-k18`. Note
 
 
 <details>
-<summary>CONFIG EXAMPLE (Click to expant)</summary>
+<summary>CONFIG EXAMPLE (Click to expand)</summary>
 
 ```bash
 PATH: "assets/datasets_structured_layer/kanari18_laylab"
