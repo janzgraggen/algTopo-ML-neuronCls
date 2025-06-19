@@ -376,6 +376,7 @@ class MultiConcat(nn.Module):
         super().__init__()
         self.bn = bn
         self.dropout = nn.Dropout(p=dropout)  
+        self.embeddings = embeddings
 
         self.feature_extractor = MultiConcatBackbone(
             embedding_dim=embedding_dim,
@@ -394,7 +395,6 @@ class MultiConcat(nn.Module):
             normalize_emb_temp=normalize_emb_temp
         )
 
-        self.embeddings = embeddings
         n_out_features = len(embeddings) * embedding_dim
         if self.bn:
             self.bn = nn.BatchNorm1d(num_features=n_out_features)
