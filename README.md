@@ -3,7 +3,7 @@
 
 > Project By Jan Zgraggen, Supervised by Lida Kanari
 
-> *Keywords:* TDM, TDA, Morphology Classification, Embedding Fusion
+> *Keywords:* TMD, TDA, Morphology Classification, Embedding Fusion
 
 **Code Attributions:**
 - The `src/tda_toolbox` folder is adapted from [`tda_toolbox`](https://github.com/Eagleseb/tda_toolbox) by Sébastien Morand with minor updates for Python compatibility.
